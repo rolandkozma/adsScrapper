@@ -16,6 +16,11 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import adsParser.olx.OlxUrlBuilder.Business;
+import adsParser.olx.OlxUrlBuilder.City;
+import adsParser.olx.OlxUrlBuilder.HouseType;
+import adsParser.olx.OlxUrlBuilder.Order;
+
 public class OlxParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(OlxParser.class);
@@ -25,12 +30,14 @@ public class OlxParser {
     private static final Pattern DATE_PATTERN = Pattern.compile("\\d{1,2} \\w* \\d{4}");
     private static final Pattern TIME_PATTERN = Pattern.compile("\\d{1,2}:\\d{1,2}");
 
-    private final OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder();
-
-    public void parse() {
+    public void parse(City city, Business business, HouseType houseType, int rooms) {
 	Date currentDate = new Date();
 
-	Document doc = getDocument(olxUrlBuilder.getUrl());
+	int page = 1;
+	OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms)
+		.page(page);
+	String url = olxUrlBuilder.getUrl();
+	Document doc = getDocument(url);
 
 	Elements links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
 
