@@ -25,20 +25,12 @@ public class OlxParser {
     private static final Pattern DATE_PATTERN = Pattern.compile("\\d{1,2} \\w* \\d{4}");
     private static final Pattern TIME_PATTERN = Pattern.compile("\\d{1,2}:\\d{1,2}");
 
-    public static final String BASE_URL = "http://olx.ro/imobiliare/apartamente-garsoniere-de-vanzare/";
-    public static final String TWO_ROOMS = "2-camere/";
-    public static final String THREE_ROOMS = "3-camere/";
-    public static final String CLUJ_CITY = "cluj-napoca/";
-    public static final String INDIVIDUALS = "search[private_business]=private";
-    public static final String ORDER_DESC_BY_DATE = "search[order]=created_at%3Adesc";
-    public static final String QUERY_PARAMS = "?";
-    public static final String AND = "&";
+    private final OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder();
 
-    public static void main(String[] args) {
-
+    public void parse() {
 	Date currentDate = new Date();
 
-	Document doc = getDocument(getUrl());
+	Document doc = getDocument(olxUrlBuilder.getUrl());
 
 	Elements links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
 
@@ -60,10 +52,20 @@ public class OlxParser {
 	    } else {
 		break;
 	    }
+
+	    pause(1000);
 	}
     }
 
-    private static boolean isPublishedToday(Date currentDate, Date publishingDate) {
+    private void pause(long millis) {
+	try {
+	    Thread.sleep(millis);
+	} catch (InterruptedException e) {
+	    LOG.warn(e.getMessage(), e);
+	}
+    }
+
+    private boolean isPublishedToday(Date currentDate, Date publishingDate) {
 	boolean isPublishedToday = false;
 
 	Calendar currentDateCalendar = Calendar.getInstance();
@@ -81,7 +83,7 @@ public class OlxParser {
 	return isPublishedToday;
     }
 
-    private static Date getPublishingDate(Document adsDetail) {
+    private Date getPublishingDate(Document adsDetail) {
 	Date publishingDate = null;
 	Elements elements = adsDetail.select("div.offerheadinner p small span");
 
@@ -106,7 +108,7 @@ public class OlxParser {
 	return publishingDate;
     }
 
-    private static String getDate(String dateText) {
+    private String getDate(String dateText) {
 	String date = null;
 	Matcher matcher = DATE_PATTERN.matcher(dateText);
 	if (matcher.find()) {
@@ -115,7 +117,7 @@ public class OlxParser {
 	return date;
     }
 
-    private static String getTime(String dateText) {
+    private String getTime(String dateText) {
 	String time = null;
 	Matcher matcher = TIME_PATTERN.matcher(dateText);
 	if (matcher.find()) {
@@ -124,7 +126,7 @@ public class OlxParser {
 	return time;
     }
 
-    private static Document getDocument(String url) {
+    private Document getDocument(String url) {
 	Document doc = null;
 	try {
 	    doc = Jsoup.connect(url).get();
@@ -134,7 +136,4 @@ public class OlxParser {
 	return doc;
     }
 
-    private static String getUrl() {
-	return BASE_URL + TWO_ROOMS + CLUJ_CITY + QUERY_PARAMS + INDIVIDUALS + AND + ORDER_DESC_BY_DATE;
-    }
 }
