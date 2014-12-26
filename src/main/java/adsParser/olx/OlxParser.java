@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adsParser.Parser;
+import adsParser.ParserUtil;
 import adsParser.olx.OlxUrlBuilder.Business;
 import adsParser.olx.OlxUrlBuilder.City;
 import adsParser.olx.OlxUrlBuilder.HouseType;
@@ -26,11 +27,20 @@ public class OlxParser implements Parser {
 
     private static final Logger LOG = LoggerFactory.getLogger(OlxParser.class);
 
-    private static final Locale LOCALE = new Locale("RO");
-    private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT, LOCALE);
+    private static final String REFERENCE_NUMBER_SELECTOR = "div.offerheadinner p small span span span.rel";
+    private static final String SURFACE_SELECTOR = "div.descriptioncontent table.details tr:nth-child(1) td:nth-child(3) strong";
+    private static final String PRICE_SELECTOR = "div#offeractions div div div.pricelabel strong";
+    private static final String USER_NAME_SELECTOR = "div#offeractions div.userbox p.userdetails span.block:nth-child(1)";
+    private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
+    private static final String DESCRIPTION_SELECTOR = "div#textContent p";
+    private static final String CONSTRUCTION_PERIOD_SELECTOR = "div.descriptioncontent table.details tr:nth-child(3) td:nth-child(1) a";
+    private static final String PROVIDED_BY_SELECTOR = "div.descriptioncontent table.details tr:nth-child(1) td:nth-child(1) a";
+    private static final String COMPARTIMENTALIZATION_SELECTOR = "div.descriptioncontent table.details tr:nth-child(1) td:nth-child(2) a";
+    private static final String PUBLISHING_DATE_SELECTOR = "div.offerheadinner p small span";
+
+    private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT, new Locale("RO"));
     private static final Pattern DATE_PATTERN = Pattern.compile("\\d{1,2} \\w* \\d{4}");
     private static final Pattern TIME_PATTERN = Pattern.compile("\\d{1,2}:\\d{1,2}");
-    private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
 
     private final OlxUrlBuilder olxUrlBuilder;
 
@@ -57,16 +67,16 @@ public class OlxParser implements Parser {
 
 	    Document adsDetail = getDocument(absUrl);
 
-	    Date publishingDate = getPublishingDate(adsDetail);
-	    String providedBy = getProvidedBy(adsDetail);
-	    String compartimentalization = getCompartimentalization(adsDetail);
-	    Integer surface = getSurface(adsDetail);
-	    String constructionTime = getConstructionTime(adsDetail);
-	    String description = getDescription(adsDetail);
-	    Integer price = getPrice(adsDetail);
-	    String phoneNumber = getPhoneNumber(adsDetail);
-	    String userName = getUserName(adsDetail);
-	    Long referenceNr = getReferenceNumber(adsDetail);
+	    Date publishingDate = getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate");
+	    String providedBy = ParserUtil.getString(adsDetail, PROVIDED_BY_SELECTOR, "providedBy");
+	    String compartimentalization = ParserUtil.getString(adsDetail, COMPARTIMENTALIZATION_SELECTOR, "compartimentalization");
+	    Integer surface = ParserUtil.getInteger(adsDetail, SURFACE_SELECTOR, "surface");
+	    String constructionPeriod = ParserUtil.getString(adsDetail, CONSTRUCTION_PERIOD_SELECTOR, "constructionPeriod");
+	    String description = ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description");
+	    Integer price = ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price");
+	    String phoneNumber = ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber");
+	    String userName = ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName");
+	    Integer referenceNumber = ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber");
 
 	    if (isPublishedToday(currentDate, publishingDate)) {
 		LOG.debug("E de azi.");
@@ -104,189 +114,23 @@ public class OlxParser implements Parser {
 	}
     }
 
-    public String getProvidedBy(Document adsDetail) {
-	String providedBy = null;
-
-	Elements elements = adsDetail.select("div.descriptioncontent table.details tr:nth-child(1) td:nth-child(1) a");
-
-	if (!elements.isEmpty()) {
-	    providedBy = elements.get(0).ownText().toLowerCase();
-	} else {
-	    LOG.warn("Failed to get providedBy from ads detail page!");
-	}
-
-	LOG.debug("providedBy: {}", providedBy);
-	return providedBy;
-    }
-
-    public String getCompartimentalization(Document adsDetail) {
-	String compartimentalization = null;
-
-	Elements elements = adsDetail.select("div.descriptioncontent table.details tr:nth-child(1) td:nth-child(2) a");
-
-	if (!elements.isEmpty()) {
-	    compartimentalization = elements.get(0).ownText().toLowerCase();
-	} else {
-	    LOG.warn("Failed to get compartimentalization from ads detail page!");
-	}
-
-	LOG.debug("compartimentalization: {}", compartimentalization);
-	return compartimentalization;
-    }
-
-    public Integer getSurface(Document adsDetail) {
-	Integer surface = null;
-
-	Elements elements = adsDetail.select("div.descriptioncontent table.details tr:nth-child(1) td:nth-child(3) strong");
-
-	if (!elements.isEmpty()) {
-	    String surfaceText = elements.get(0).ownText().toLowerCase();
-	    Matcher matcher = NUMBER_PATTERN.matcher(surfaceText);
-	    if (matcher.find()) {
-		String surfaceString = matcher.group();
-		try {
-		    surface = Integer.valueOf(surfaceString);
-		} catch (NumberFormatException e) {
-		    LOG.warn("Failed to parse surface from: {} !", surfaceString);
-		}
-	    } else {
-		LOG.warn("Failed to parse surface from {}", surfaceText);
-	    }
-
-	} else {
-	    LOG.warn("Failed to get surface from ads detail page!");
-	}
-
-	LOG.debug("surface: {}", surface);
-	return surface;
-    }
-
-    private String getConstructionTime(Document adsDetail) {
-	String constructionTime = null;
-
-	Elements elements = adsDetail.select("div.descriptioncontent table.details tr:nth-child(3) td:nth-child(1) a");
-
-	if (!elements.isEmpty()) {
-	    constructionTime = elements.get(0).ownText().toLowerCase();
-	} else {
-	    LOG.warn("Failed to get constructionTime from ads detail page!");
-	}
-
-	LOG.debug("constructionTime: {}", constructionTime);
-	return constructionTime;
-    }
-
-    private String getDescription(Document adsDetail) {
-	String description = null;
-
-	Elements elements = adsDetail.select("div.descriptioncontent div#textContent p");
-
-	if (!elements.isEmpty()) {
-	    description = elements.get(0).ownText();
-	} else {
-	    LOG.warn("Failed to get description from ads detail page!");
-	}
-
-	LOG.debug("description: {}", description);
-	return description;
-    }
-
-    private Integer getPrice(Document adsDetail) {
-	Integer price = null;
-
-	Elements elements = adsDetail.select("div#offerbox div#offeractions div div div.pricelabel strong");
-
-	if (!elements.isEmpty()) {
-	    String priceText = elements.get(0).ownText().replaceAll("\\s", "");
-	    Matcher matcher = NUMBER_PATTERN.matcher(priceText);
-	    if (matcher.find()) {
-		String priceString = matcher.group();
-		try {
-		    price = Integer.valueOf(priceString);
-		} catch (NumberFormatException e) {
-		    LOG.warn("Failed to parse price from: {} !", priceString);
-		}
-	    } else {
-		LOG.warn("Failed to parse price from {}", priceText);
-	    }
-
-	} else {
-	    LOG.warn("Failed to get price from ads detail page!");
-	}
-
-	LOG.debug("price: {}", price);
-	return price;
-    }
-
-    private String getPhoneNumber(Document adsDetail) {
-	String phoneNumber = null;
-
-	Elements elements = adsDetail.select("ul#contact_methods li.link-phone div.contactitem strong");
-
-	if (!elements.isEmpty()) {
-	    phoneNumber = elements.get(0).ownText();
-	} else {
-	    LOG.warn("Failed to get phoneNumber from ads detail page!");
-	}
-
-	LOG.debug("phoneNumber: {}", phoneNumber);
-	return phoneNumber;
-    }
-
-    private Long getReferenceNumber(Document adsDetail) {
-	Long referenceNumber = null;
-
-	Elements elements = adsDetail.select("div.offerheadinner p small span span span.rel");
-
-	if (!elements.isEmpty()) {
-	    String referenceNumberText = elements.get(0).ownText();
-	    try {
-		referenceNumber = Long.valueOf(referenceNumberText);
-	    } catch (NumberFormatException e) {
-		LOG.warn("Failed to parse referenceNumber from: {} !", referenceNumberText);
-	    }
-	} else {
-	    LOG.warn("Failed to get referenceNumber from ads detail page!");
-	}
-
-	LOG.debug("referenceNumber: {}", referenceNumber);
-	return referenceNumber;
-    }
-
-    private String getUserName(Document adsDetail) {
-	String userName = null;
-
-	Elements elements = adsDetail.select("div#offerbox div#offeractions div div div.userbox p.userdetails span.block:nth-child(1)");
-
-	if (!elements.isEmpty()) {
-	    userName = elements.get(0).ownText();
-	} else {
-	    LOG.warn("Failed to get userName from ads detail page!");
-	}
-
-	LOG.debug("userName: {}", userName);
-	return userName;
-    }
-
-    public Date getPublishingDate(Document adsDetail) {
+    private Date getPublishingDate(Document adsDetail, String selector, String fieldName) {
 	Date publishingDate = null;
-	Elements elements = adsDetail.select("div.offerheadinner p small span");
 
-	if (!elements.isEmpty()) {
-	    String dateText = elements.get(0).ownText().toLowerCase();
-	    LOG.debug(dateText);
+	String publishingDateText = ParserUtil.getString(adsDetail, selector, fieldName);
 
-	    String time = getTime(dateText);
-	    String date = getDate(dateText);
+	if (publishingDateText != null) {
+	    publishingDateText = publishingDateText.toLowerCase();
+
+	    String time = getTime(publishingDateText);
+	    String date = getDate(publishingDateText);
 	    String formatedDateTime = String.format("%s %s", date, time);
 
 	    try {
 		publishingDate = DATE_FORMAT.parse(formatedDateTime);
-	    } catch (ParseException ex) {
-		LOG.warn(String.format("Faled to parse date from string: %s", formatedDateTime), ex);
+	    } catch (ParseException e) {
+		LOG.warn(String.format("Faled to parse date from string: %s", formatedDateTime), e);
 	    }
-	} else {
-	    LOG.warn("Failed to get publishing date from ads detail page!");
 	}
 
 	LOG.debug("publishingDate: {}", publishingDate);
