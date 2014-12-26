@@ -8,7 +8,7 @@ import adsParser.olx.OlxUrlBuilder.HouseType;
 public class Main {
 
     public static void main(String[] args) {
-	new OlxParser().parse(City.CLUJ_NAPOCA, Business.PRIVATE, HouseType.APARTMENT, 2);
+	new OlxParser(City.CLUJ_NAPOCA, Business.PRIVATE, HouseType.APARTMENT, 2).parse();
     }
 
 }

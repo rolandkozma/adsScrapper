@@ -4,19 +4,12 @@ import java.util.Date;
 
 import org.jsoup.nodes.Document;
 
-import adsParser.olx.OlxUrlBuilder.Business;
-import adsParser.olx.OlxUrlBuilder.City;
-import adsParser.olx.OlxUrlBuilder.HouseType;
-
 public interface Parser {
+
     /**
-     *
-     * @param city
-     * @param business
-     * @param houseType
-     * @param rooms
+     * Perform the parsing algorithm.
      */
-    public void parse(City city, Business business, HouseType houseType, int rooms);
+    public void parse();
 
     /**
      * The date when the advertisement was published.

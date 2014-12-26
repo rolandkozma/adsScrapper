@@ -32,13 +32,16 @@ public class OlxParser implements Parser {
     private static final Pattern TIME_PATTERN = Pattern.compile("\\d{1,2}:\\d{1,2}");
     private static final Pattern NUMBER_PATTERN = Pattern.compile("\\d+");
 
-    public void parse(City city, Business business, HouseType houseType, int rooms) {
+    private final OlxUrlBuilder olxUrlBuilder;
+
+    public OlxParser(City city, Business business, HouseType houseType, int rooms) {
+	olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms);
+    }
+
+    public void parse() {
 	Date currentDate = new Date();
 
-	int page = 1;
-	OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms)
-		.page(page);
-	String url = olxUrlBuilder.getUrl();
+	String url = olxUrlBuilder.page(1).getUrl();
 	Document doc = getDocument(url);
 
 	Elements links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
