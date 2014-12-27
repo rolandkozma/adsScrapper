@@ -37,70 +37,86 @@ public class OlxScraper {
 	private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
 	private static final String DESCRIPTION_SELECTOR = "div#textContent p";
 	private static final String PUBLISHING_DATE_SELECTOR = "div.offerheadinner p small span";
-
-	private static final String PROVIDED_BY_SELECTOR = "div.descriptioncontent table.details tr:nth-child(1) td:nth-child(1) a";
-	private static final String COMPARTIMENTALIZATION_SELECTOR = "div.descriptioncontent table.details tr:nth-child(1) td:nth-child(2) a";
-	private static final String SURFACE_SELECTOR = "div.descriptioncontent table.details tr:nth-child(1) td:nth-child(3) strong";
-	private static final String CONSTRUCTION_PERIOD_SELECTOR = "div.descriptioncontent table.details tr:nth-child(3) td:nth-child(1) a";
+	private static final String TABLE_DETAILS_DIV_SELECTOR = "div.descriptioncontent table.details tr td div";
 
 	private static final Locale LOCALE = new Locale("RO");
 	private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT, LOCALE);
 	private static final Pattern DATE_PATTERN = Pattern.compile("\\d{1,2} \\w* \\d{4}");
 	private static final Pattern TIME_PATTERN = Pattern.compile("\\d{1,2}:\\d{1,2}");
 
+	private static final String PROVIDED_BY_TEXT = "oferit";
+	private static final String COMPARTIMENTALIZATION_TEXT = "compartimentare";
+	private static final String SURFACE_TEXT = "suprafata";
+	private static final String CONSTRUCTION_PERIOD_TEXT = "constructie";
+	private static final String ENDOWMENTS_TEXT = "locuinta";
+
 	public void scrap(City city, Business business, HouseType houseType, int rooms) {
 		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms);
 
 		Date currentDate = new Date();
 		Date lastRunDate = getLastRunDate(currentDate);
-		Date publishingDate = currentDate;
 
 		boolean parseNextPage = true;
 		int pageNumber = 0;
 
-		LOG.info("-------------------------------start parsing----------------------------------------------------------\n");
-
+		LOG.info("-------------------------------start scraping----------------------------------------------------------\n");
 		while (parseNextPage) {
 			pageNumber++;
 			String url = olxUrlBuilder.page(pageNumber).getUrl();
-			Document doc = getDocument(url);
-
-			Elements links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
+			Elements links = getLinks(url);
 			LOG.debug("got: {}", links.size());
 
 			for (Element link : links) {
-				String title = link.text();
-				LOG.info(title);
+				Advertisment advertisment = createAdvertisment(link);
 
-				String absUrl = link.absUrl("href");
-				LOG.info(absUrl);
-
-				Document adsDetail = getDocument(absUrl);
-
-				publishingDate = getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate");
-
-				if (publishingDate.before(lastRunDate)) {
+				if ((advertisment.getPublishingDate() == null) || advertisment.getPublishingDate().before(lastRunDate)) {
 					parseNextPage = false;
 					break;
 				}
 
-				String providedBy = ParserUtil.getString(adsDetail, PROVIDED_BY_SELECTOR, "providedBy");
-				String compartimentalization = ParserUtil.getString(adsDetail, COMPARTIMENTALIZATION_SELECTOR, "compartimentalization");
-				Integer surface = ParserUtil.getInteger(adsDetail, SURFACE_SELECTOR, "surface");
-				String constructionPeriod = ParserUtil.getString(adsDetail, CONSTRUCTION_PERIOD_SELECTOR, "constructionPeriod");
-				String description = ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description");
-				Integer price = ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price");
-				String phoneNumber = ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber");
-				String userName = ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName");
-				Integer referenceNumber = ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber");
-
-				// TODO persist
-
+				LOG.info(advertisment.toString());
 				LOG.info("---------------------------------------------------------------------------------------------------\n");
 				pause(PAUSE_TIME);
 			}
 		}
+		LOG.info("-------------------------------end scraping---------------------------------------------------------\n");
+	}
 
+	private Elements getLinks(String url) {
+		Document doc = getDocument(url);
+		Elements links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
+		return links;
+	}
+
+	private Advertisment createAdvertisment(Element link) {
+		Advertisment advertisment = new Advertisment();
+		advertisment.setTitle(link.text());
+		advertisment.setAbsUrl(link.absUrl("href"));
+
+		Document adsDetail = getDocument(advertisment.getAbsUrl());
+		advertisment.setPublishingDate(getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate"));
+		advertisment.setReferenceNumber(ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
+		advertisment.setDescription(ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description"));
+		advertisment.setPrice(ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price"));
+		advertisment.setPhoneNumber(ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber"));
+		advertisment.setUserName(ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName"));
+
+		Elements elements = adsDetail.select(TABLE_DETAILS_DIV_SELECTOR);
+		for (Element element : elements) {
+			String elementText = element.ownText().trim().toLowerCase();
+			if (elementText.contains(PROVIDED_BY_TEXT)) {
+				advertisment.setProvidedBy(ParserUtil.getString(element, "a", "providedBy"));
+			} else if (elementText.contains(COMPARTIMENTALIZATION_TEXT)) {
+				advertisment.setCompartimentalization(ParserUtil.getString(element, "a", "compartimentalization"));
+			} else if (elementText.contains(SURFACE_TEXT)) {
+				advertisment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
+			} else if (elementText.contains(CONSTRUCTION_PERIOD_TEXT)) {
+				advertisment.setConstructionPeriod(ParserUtil.getString(element, "a", "constructionPeriod"));
+			} else if (elementText.contains(ENDOWMENTS_TEXT)) {
+				advertisment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
+			}
+		}
+		return advertisment;
 	}
 
 	private Date getLastRunDate(Date currentDate) {
@@ -128,7 +144,6 @@ public class OlxScraper {
 
 	private Date getPublishingDate(Document adsDetail, String selector, String fieldName) {
 		Date publishingDate = null;
-
 		String publishingDateText = ParserUtil.getString(adsDetail, selector, fieldName);
 
 		if (publishingDateText != null) {
