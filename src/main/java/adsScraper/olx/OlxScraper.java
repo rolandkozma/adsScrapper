@@ -26,9 +26,6 @@ import adsScraper.olx.OlxUrlBuilder.Order;
 
 @Stateless
 public class OlxScraper {
-
-	private static final int PAUSE_TIME = 5000;
-
 	private static final Logger LOG = LoggerFactory.getLogger(OlxScraper.class);
 
 	private static final String REFERENCE_NUMBER_SELECTOR = "div.offerheadinner p small span span span.rel";
@@ -50,6 +47,8 @@ public class OlxScraper {
 	private static final String CONSTRUCTION_PERIOD_TEXT = "constructie";
 	private static final String ENDOWMENTS_TEXT = "locuinta";
 
+	private static final int PAUSE_TIME = 5000;
+
 	public void scrap(City city, Business business, HouseType houseType, int rooms) {
 		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms);
 
@@ -63,7 +62,7 @@ public class OlxScraper {
 		while (parseNextPage) {
 			pageNumber++;
 			String url = olxUrlBuilder.page(pageNumber).getUrl();
-			Elements links = getLinks(url);
+			Elements links = getNotSponsoredLinks(url); // TODO scrap sponsored links too
 			LOG.debug("got: {}", links.size());
 
 			for (Element link : links) {
@@ -82,7 +81,7 @@ public class OlxScraper {
 		LOG.info("-------------------------------end scraping---------------------------------------------------------\n");
 	}
 
-	private Elements getLinks(String url) {
+	private Elements getNotSponsoredLinks(String url) {
 		Document doc = getDocument(url);
 		Elements links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
 		return links;
@@ -161,6 +160,9 @@ public class OlxScraper {
 		}
 
 		LOG.debug("publishingDate: {}", publishingDate);
+		if (publishingDate == null) {
+			LOG.error("Failed to get publishingDate - > scraping will stop! ");
+		}
 		return publishingDate;
 	}
 
