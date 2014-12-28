@@ -10,6 +10,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.ejb.Stateless;
+import javax.inject.Inject;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -19,6 +20,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adsScraper.ParserUtil;
+import adsScraper.mongo.dao.AdvertismentDao;
+import adsScraper.mongo.entities.Advertisment;
 import adsScraper.olx.OlxUrlBuilder.Business;
 import adsScraper.olx.OlxUrlBuilder.City;
 import adsScraper.olx.OlxUrlBuilder.HouseType;
@@ -49,11 +52,16 @@ public class OlxScraper {
 
 	private static final int PAUSE_TIME = 5000;
 
+	private Date currentDate;
+
+	@Inject
+	private AdvertismentDao advertismentDao;
+
 	public void scrap(City city, Business business, HouseType houseType, int rooms) {
 		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms);
 
-		Date currentDate = new Date();
-		Date lastRunDate = getLastRunDate(currentDate);
+		currentDate = new Date();
+		Date lastRunDate = getLastRunDate();
 
 		boolean parseNextPage = true;
 		int pageNumber = 0;
@@ -73,6 +81,8 @@ public class OlxScraper {
 					break;
 				}
 
+				advertismentDao.save(advertisment);
+
 				LOG.info(advertisment.toString());
 				LOG.info("---------------------------------------------------------------------------------------------------\n");
 				pause(PAUSE_TIME);
@@ -82,43 +92,50 @@ public class OlxScraper {
 	}
 
 	private Elements getNotSponsoredLinks(String url) {
+		Elements links = new Elements();
 		Document doc = getDocument(url);
-		Elements links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
+		if (doc != null) {
+			links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
+		}
 		return links;
 	}
 
 	private Advertisment createAdvertisment(Element link) {
 		Advertisment advertisment = new Advertisment();
+		advertisment.setPublishingSite(Advertisment.Site.OLX.value());
+		advertisment.setScrapingDate(currentDate);
 		advertisment.setTitle(link.text());
 		advertisment.setAbsUrl(link.absUrl("href"));
 
 		Document adsDetail = getDocument(advertisment.getAbsUrl());
-		advertisment.setPublishingDate(getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate"));
-		advertisment.setReferenceNumber(ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
-		advertisment.setDescription(ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description"));
-		advertisment.setPrice(ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price"));
-		advertisment.setPhoneNumber(ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber"));
-		advertisment.setUserName(ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName"));
+		if (adsDetail != null) {
+			advertisment.setPublishingDate(getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate"));
+			advertisment.setReferenceNumber(ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
+			advertisment.setDescription(ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description"));
+			advertisment.setPrice(ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price"));
+			advertisment.setPhoneNumber(ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber"));
+			advertisment.setUserName(ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName"));
 
-		Elements elements = adsDetail.select(TABLE_DETAILS_DIV_SELECTOR);
-		for (Element element : elements) {
-			String elementText = element.ownText().trim().toLowerCase();
-			if (elementText.contains(PROVIDED_BY_TEXT)) {
-				advertisment.setProvidedBy(ParserUtil.getString(element, "a", "providedBy"));
-			} else if (elementText.contains(COMPARTIMENTALIZATION_TEXT)) {
-				advertisment.setCompartimentalization(ParserUtil.getString(element, "a", "compartimentalization"));
-			} else if (elementText.contains(SURFACE_TEXT)) {
-				advertisment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
-			} else if (elementText.contains(CONSTRUCTION_PERIOD_TEXT)) {
-				advertisment.setConstructionPeriod(ParserUtil.getString(element, "a", "constructionPeriod"));
-			} else if (elementText.contains(ENDOWMENTS_TEXT)) {
-				advertisment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
+			Elements elements = adsDetail.select(TABLE_DETAILS_DIV_SELECTOR);
+			for (Element element : elements) {
+				String elementText = element.ownText().trim().toLowerCase();
+				if (elementText.contains(PROVIDED_BY_TEXT)) {
+					advertisment.setProvidedBy(ParserUtil.getString(element, "a", "providedBy"));
+				} else if (elementText.contains(COMPARTIMENTALIZATION_TEXT)) {
+					advertisment.setCompartimentalization(ParserUtil.getString(element, "a", "compartimentalization"));
+				} else if (elementText.contains(SURFACE_TEXT)) {
+					advertisment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
+				} else if (elementText.contains(CONSTRUCTION_PERIOD_TEXT)) {
+					advertisment.setConstructionPeriod(ParserUtil.getString(element, "a", "constructionPeriod"));
+				} else if (elementText.contains(ENDOWMENTS_TEXT)) {
+					advertisment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
+				}
 			}
 		}
 		return advertisment;
 	}
 
-	private Date getLastRunDate(Date currentDate) {
+	private Date getLastRunDate() {
 		Date lastRunDate = null;
 		// TODO get last run date from db
 		lastRunDate = getYesterdaysDate(currentDate);
@@ -190,10 +207,15 @@ public class OlxScraper {
 
 	private Document getDocument(String url) {
 		Document doc = null;
-		try {
-			doc = Jsoup.connect(url).get();
-		} catch (IOException e) {
-			LOG.warn(String.format("Failed to get document! url: %s", url), e);
+		int retriesNr = 3;
+		int i = 0;
+		while ((doc == null) && (i < retriesNr)) {
+			try {
+				doc = Jsoup.connect(url).get();
+			} catch (IOException e) {
+				LOG.warn(String.format("Failed to get document! url: %s", url), e);
+				pause(PAUSE_TIME);
+			}
 		}
 		return doc;
 	}

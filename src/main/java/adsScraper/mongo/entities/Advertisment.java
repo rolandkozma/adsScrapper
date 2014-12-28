@@ -1,9 +1,16 @@
-package adsScraper.olx;
+package adsScraper.mongo.entities;
 
 import java.util.Date;
 
+import org.bson.types.ObjectId;
+import org.mongodb.morphia.annotations.Entity;
+import org.mongodb.morphia.annotations.Id;
+
+@Entity
 public class Advertisment {
 
+	@Id
+	private ObjectId id;
 	private String title;
 	private String absUrl;
 	private Date publishingDate;
@@ -17,6 +24,8 @@ public class Advertisment {
 	private String phoneNumber;
 	private String userName;
 	private Integer referenceNumber;
+	private String publishingSite;
+	private Date scrapingDate;
 
 	public Advertisment() {
 
@@ -126,12 +135,43 @@ public class Advertisment {
 		this.endowments = endowments;
 	}
 
+	public String getPublishingSite() {
+		return publishingSite;
+	}
+
+	public void setPublishingSite(String publishingSite) {
+		this.publishingSite = publishingSite;
+	}
+
+	public Date getScrapingDate() {
+		return scrapingDate;
+	}
+
+	public void setScrapingDate(Date scrapingDate) {
+		this.scrapingDate = scrapingDate;
+	}
+
+	public enum Site {
+		OLX("olx");
+
+		private final String value;
+
+		private Site(String value) {
+			this.value = value;
+		}
+
+		public String value() {
+			return value;
+		}
+	}
+
 	@Override
 	public String toString() {
 		return "Advertisment [title=" + title + ",\n absUrl=" + absUrl + ",\n publishingDate=" + publishingDate + ",\n providedBy=" + providedBy
 				+ ",\n compartimentalization=" + compartimentalization + ",\n surface=" + surface + ",\n constructionPeriod=" + constructionPeriod
 				+ ",\n endowments=" + endowments + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
-				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + "]";
+				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite
+				+ ",\n scrapingDate=" + scrapingDate + "]";
 	}
 
 }

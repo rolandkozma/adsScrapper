@@ -15,6 +15,8 @@
 		<jsoup.version>1.8.1</jsoup.version>
 		<javaee.version>7.0</javaee.version>
 		<junit.version>4.11</junit.version>
+		<morphia.version>0.109</morphia.version>
+		<mongo.driver.version>2.12.4</mongo.driver.version>
 	</properties>
 
 	<build>
@@ -22,6 +24,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.2</version>
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
@@ -29,7 +32,7 @@
 			</plugin>
 		</plugins>
 	</build>
-	
+
 	<dependencies>
 		<!-- jsoup HTML parser library @ http://jsoup.org/ -->
 		<dependency>
@@ -52,6 +55,35 @@
 			<artifactId>junit</artifactId>
 			<version>${junit.version}</version>
 			<scope>test</scope>
+		</dependency>
+
+		<!-- morphia -->
+		<dependency>
+			<groupId>org.mongodb.morphia</groupId>
+			<artifactId>morphia</artifactId>
+			<version>${morphia.version}</version>
+		</dependency>
+
+		<!-- Optional Jars (for certain features) but required by maven for building. -->
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>[2.1_3,)</version>
+			<type>jar</type>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>com.thoughtworks.proxytoys</groupId>
+			<artifactId>proxytoys</artifactId>
+			<version>1.0</version>
+			<type>jar</type>
+			<optional>true</optional>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mongodb</groupId>
+			<artifactId>mongo-java-driver</artifactId>
+			<version>${mongo.driver.version}</version>
 		</dependency>
 
 		<!-- logging -->
