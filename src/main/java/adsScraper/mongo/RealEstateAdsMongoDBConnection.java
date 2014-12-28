@@ -8,7 +8,7 @@ import com.mongodb.MongoClient;
 public class RealEstateAdsMongoDBConnection {
 	private static final RealEstateAdsMongoDBConnection INSTANCE = new RealEstateAdsMongoDBConnection();
 
-	public static final String DB_NAME = "realEstateAds";
+	public static final String DB_NAME = "real_estate_ads";
 	public static final String HOST = "127.0.0.1";
 	public static final int PORT = 27017;
 

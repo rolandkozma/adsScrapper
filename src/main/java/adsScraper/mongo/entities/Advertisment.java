@@ -6,7 +6,7 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 
-@Entity
+@Entity("advertisment")
 public class Advertisment {
 
 	@Id
@@ -26,6 +26,7 @@ public class Advertisment {
 	private Integer referenceNumber;
 	private String publishingSite;
 	private Date scrapingDate;
+	private String keyWord;
 
 	public Advertisment() {
 
@@ -151,6 +152,14 @@ public class Advertisment {
 		this.scrapingDate = scrapingDate;
 	}
 
+	public String getKeyWord() {
+		return keyWord;
+	}
+
+	public void setKeyWord(String keyWord) {
+		this.keyWord = keyWord;
+	}
+
 	public enum Site {
 		OLX("olx");
 
@@ -171,7 +180,7 @@ public class Advertisment {
 				+ ",\n compartimentalization=" + compartimentalization + ",\n surface=" + surface + ",\n constructionPeriod=" + constructionPeriod
 				+ ",\n endowments=" + endowments + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
 				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite
-				+ ",\n scrapingDate=" + scrapingDate + "]";
+				+ ",\n scrapingDate=" + scrapingDate + ",\n keyWord=" + keyWord + "]";
 	}
 
 }

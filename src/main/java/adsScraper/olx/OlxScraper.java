@@ -1,10 +1,11 @@
 package adsScraper.olx;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -20,6 +21,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adsScraper.ParserUtil;
+import adsScraper.dto.MinimumAdsDetailDto;
+import adsScraper.dto.MinimumAdsDetailListDto;
 import adsScraper.mongo.dao.AdvertismentDao;
 import adsScraper.mongo.entities.Advertisment;
 import adsScraper.olx.OlxUrlBuilder.Business;
@@ -51,14 +54,17 @@ public class OlxScraper {
 	private static final String ENDOWMENTS_TEXT = "locuinta";
 
 	private static final int PAUSE_TIME = 5000;
+	private static final String OWNER = "proprietar";
 
 	private Date currentDate;
 
 	@Inject
 	private AdvertismentDao advertismentDao;
 
-	public void scrap(City city, Business business, HouseType houseType, int rooms) {
+	public MinimumAdsDetailListDto scrap(City city, Business business, HouseType houseType, int rooms, List<String> keyWords) {
 		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms);
+
+		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
 
 		currentDate = new Date();
 		Date lastRunDate = getLastRunDate();
@@ -81,7 +87,10 @@ public class OlxScraper {
 					break;
 				}
 
-				advertismentDao.save(advertisment);
+				if (isPublishedByOwner(advertisment) && hasKeyWords(advertisment, keyWords)) {
+					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(advertisment));
+					advertismentDao.save(advertisment);
+				}
 
 				LOG.info(advertisment.toString());
 				LOG.info("---------------------------------------------------------------------------------------------------\n");
@@ -89,6 +98,25 @@ public class OlxScraper {
 			}
 		}
 		LOG.info("-------------------------------end scraping---------------------------------------------------------\n");
+		return new MinimumAdsDetailListDto(minimumAdsDetailDtos);
+	}
+
+	private boolean isPublishedByOwner(Advertisment advertisment) {
+		return OWNER.equalsIgnoreCase(advertisment.getProvidedBy());
+	}
+
+	public boolean hasKeyWords(Advertisment advertisment, List<String> keyWords) {
+		boolean hasKeyWords = false;
+		if (advertisment.getDescription() != null) {
+			String lowerCaseDescription = advertisment.getDescription().toLowerCase();
+			for (String key : keyWords) {
+				if (lowerCaseDescription.contains(key.toLowerCase())) {
+					hasKeyWords = true;
+					advertisment.setKeyWord(key);
+				}
+			}
+		}
+		return hasKeyWords;
 	}
 
 	private Elements getNotSponsoredLinks(String url) {
@@ -136,9 +164,10 @@ public class OlxScraper {
 	}
 
 	private Date getLastRunDate() {
-		Date lastRunDate = null;
-		// TODO get last run date from db
-		lastRunDate = getYesterdaysDate(currentDate);
+		Date lastRunDate = advertismentDao.getLastRunDate();
+		if (lastRunDate == null) {
+			lastRunDate = getYesterdaysDate(currentDate);
+		}
 		LOG.debug("lastRunDate: {}", lastRunDate);
 		return lastRunDate;
 	}
@@ -212,10 +241,11 @@ public class OlxScraper {
 		while ((doc == null) && (i < retriesNr)) {
 			try {
 				doc = Jsoup.connect(url).get();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				LOG.warn(String.format("Failed to get document! url: %s", url), e);
 				pause(PAUSE_TIME);
 			}
+			i++;
 		}
 		return doc;
 	}
