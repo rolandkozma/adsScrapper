@@ -20,15 +20,14 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import adsScraper.ParserUtil;
 import adsScraper.dto.MinimumAdsDetailDto;
-import adsScraper.dto.MinimumAdsDetailListDto;
-import adsScraper.mongo.dao.AdvertismentDao;
-import adsScraper.mongo.entities.Advertisment;
+import adsScraper.mongo.dao.ApartmentDao;
+import adsScraper.mongo.entities.Apartment;
 import adsScraper.olx.OlxUrlBuilder.Business;
 import adsScraper.olx.OlxUrlBuilder.City;
 import adsScraper.olx.OlxUrlBuilder.HouseType;
 import adsScraper.olx.OlxUrlBuilder.Order;
+import adsScraper.util.ParserUtil;
 
 @Stateless
 public class OlxScraper {
@@ -59,112 +58,126 @@ public class OlxScraper {
 	private Date currentDate;
 
 	@Inject
-	private AdvertismentDao advertismentDao;
+	private ApartmentDao apartmentDao;
 
-	public MinimumAdsDetailListDto scrap(City city, Business business, HouseType houseType, int rooms, List<String> keyWords) {
+	public List<MinimumAdsDetailDto> scrap(City city, Business business, HouseType houseType, int rooms, List<String> keyWords) {
+		currentDate = new Date();
 		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms);
 
-		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
+		List<MinimumAdsDetailDto> allFoundApartments = new ArrayList<MinimumAdsDetailDto>();
 
-		currentDate = new Date();
-		Date lastRunDate = getLastRunDate();
+		List<MinimumAdsDetailDto> minimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, false);
+		allFoundApartments.addAll(minimumAdsDetailDtos);
 
+		List<MinimumAdsDetailDto> promotedMinimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, true);
+		allFoundApartments.addAll(promotedMinimumAdsDetailDtos);
+
+		return allFoundApartments;
+	}
+
+	private List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> keyWords, boolean isPromoted) {
+		Date lastRunDate = getLastRunDate(olxUrlBuilder, isPromoted);
 		boolean parseNextPage = true;
 		int pageNumber = 0;
 
-		LOG.info("-------------------------------start scraping----------------------------------------------------------\n");
+		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
+		LOG.info("--------------------- start scraping {} {} -----------------------\n", isPromoted ? "promoted" : "", olxUrlBuilder.getHouseType());
 		while (parseNextPage) {
 			pageNumber++;
 			String url = olxUrlBuilder.page(pageNumber).getUrl();
-			Elements links = getNotSponsoredLinks(url); // TODO scrap sponsored links too
+			Elements links = getAdLinks(url, isPromoted);
 			LOG.debug("got: {}", links.size());
 
 			for (Element link : links) {
-				Advertisment advertisment = createAdvertisment(link);
+				Apartment apartment = createApartment(link, olxUrlBuilder, isPromoted);
 
-				if ((advertisment.getPublishingDate() == null) || advertisment.getPublishingDate().before(lastRunDate)) {
+				if ((apartment.getPublishingDate() == null) || apartment.getPublishingDate().before(lastRunDate)) {
 					parseNextPage = false;
 					break;
 				}
 
-				if (isPublishedByOwner(advertisment) && hasKeyWords(advertisment, keyWords)) {
-					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(advertisment));
-					advertismentDao.save(advertisment);
+				if (isPublishedByOwner(apartment) && hasKeyWords(apartment, keyWords)) {
+					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(apartment));
+					apartmentDao.save(apartment);
 				}
 
-				LOG.info(advertisment.toString());
+				LOG.info(apartment.toString());
 				LOG.info("---------------------------------------------------------------------------------------------------\n");
 				pause(PAUSE_TIME);
 			}
 		}
-		LOG.info("-------------------------------end scraping---------------------------------------------------------\n");
-		return new MinimumAdsDetailListDto(minimumAdsDetailDtos);
+		LOG.info("--------------------- end scraping {} {} -----------------------\n", isPromoted ? "promoted" : "", olxUrlBuilder.getHouseType());
+		return minimumAdsDetailDtos;
 	}
 
-	private boolean isPublishedByOwner(Advertisment advertisment) {
-		return OWNER.equalsIgnoreCase(advertisment.getProvidedBy());
+	private boolean isPublishedByOwner(Apartment apartment) {
+		return OWNER.equalsIgnoreCase(apartment.getProvidedBy());
 	}
 
-	public boolean hasKeyWords(Advertisment advertisment, List<String> keyWords) {
+	public boolean hasKeyWords(Apartment apartment, List<String> keyWords) {
 		boolean hasKeyWords = false;
-		if (advertisment.getDescription() != null) {
-			String lowerCaseDescription = advertisment.getDescription().toLowerCase();
+		if (apartment.getDescription() != null) {
+			String lowerCaseDescription = apartment.getDescription().toLowerCase();
 			for (String key : keyWords) {
 				if (lowerCaseDescription.contains(key.toLowerCase())) {
 					hasKeyWords = true;
-					advertisment.setKeyWord(key);
+					apartment.setKeyWord(key);
 				}
 			}
 		}
 		return hasKeyWords;
 	}
 
-	private Elements getNotSponsoredLinks(String url) {
+	private Elements getAdLinks(String url, boolean isPromoted) {
 		Elements links = new Elements();
 		Document doc = getDocument(url);
 		if (doc != null) {
-			links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash").select(".detailsLink");
+			links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash")
+					.select(isPromoted ? ".detailsLinkPromoted" : ".detailsLink");
 		}
 		return links;
 	}
 
-	private Advertisment createAdvertisment(Element link) {
-		Advertisment advertisment = new Advertisment();
-		advertisment.setPublishingSite(Advertisment.Site.OLX.value());
-		advertisment.setScrapingDate(currentDate);
-		advertisment.setTitle(link.text());
-		advertisment.setAbsUrl(link.absUrl("href"));
+	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, boolean isPromoted) {
+		Apartment apartment = new Apartment();
+		apartment.setPublishingSite(Apartment.Site.OLX.value());
+		apartment.setScrapingDate(currentDate);
+		apartment.setTitle(link.text());
+		apartment.setAbsUrl(link.absUrl("href"));
 
-		Document adsDetail = getDocument(advertisment.getAbsUrl());
+		Document adsDetail = getDocument(apartment.getAbsUrl());
 		if (adsDetail != null) {
-			advertisment.setPublishingDate(getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate"));
-			advertisment.setReferenceNumber(ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
-			advertisment.setDescription(ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description"));
-			advertisment.setPrice(ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price"));
-			advertisment.setPhoneNumber(ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber"));
-			advertisment.setUserName(ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName"));
+			apartment.setIsPromoted(isPromoted);
+			apartment.setBusiness(olxUrlBuilder.getBusiness().value());
+			apartment.setRooms(olxUrlBuilder.getRooms());
+			apartment.setPublishingDate(getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate"));
+			apartment.setReferenceNumber(ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
+			apartment.setDescription(ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description"));
+			apartment.setPrice(ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price"));
+			apartment.setPhoneNumber(ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber"));
+			apartment.setUserName(ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName"));
 
 			Elements elements = adsDetail.select(TABLE_DETAILS_DIV_SELECTOR);
 			for (Element element : elements) {
 				String elementText = element.ownText().trim().toLowerCase();
 				if (elementText.contains(PROVIDED_BY_TEXT)) {
-					advertisment.setProvidedBy(ParserUtil.getString(element, "a", "providedBy"));
+					apartment.setProvidedBy(ParserUtil.getString(element, "a", "providedBy"));
 				} else if (elementText.contains(COMPARTIMENTALIZATION_TEXT)) {
-					advertisment.setCompartimentalization(ParserUtil.getString(element, "a", "compartimentalization"));
+					apartment.setCompartimentalization(ParserUtil.getString(element, "a", "compartimentalization"));
 				} else if (elementText.contains(SURFACE_TEXT)) {
-					advertisment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
+					apartment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
 				} else if (elementText.contains(CONSTRUCTION_PERIOD_TEXT)) {
-					advertisment.setConstructionPeriod(ParserUtil.getString(element, "a", "constructionPeriod"));
+					apartment.setConstructionPeriod(ParserUtil.getString(element, "a", "constructionPeriod"));
 				} else if (elementText.contains(ENDOWMENTS_TEXT)) {
-					advertisment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
+					apartment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
 				}
 			}
 		}
-		return advertisment;
+		return apartment;
 	}
 
-	private Date getLastRunDate() {
-		Date lastRunDate = advertismentDao.getLastRunDate();
+	private Date getLastRunDate(OlxUrlBuilder olxUrlBuilder, boolean isPromoted) {
+		Date lastRunDate = apartmentDao.getLastRunDate(olxUrlBuilder.getRooms(), isPromoted);
 		if (lastRunDate == null) {
 			lastRunDate = getYesterdaysDate(currentDate);
 		}
@@ -207,7 +220,7 @@ public class OlxScraper {
 
 		LOG.debug("publishingDate: {}", publishingDate);
 		if (publishingDate == null) {
-			LOG.error("Failed to get publishingDate - > scraping will stop! ");
+			LOG.error("Failed to get publishingDate! ");
 		}
 		return publishingDate;
 	}

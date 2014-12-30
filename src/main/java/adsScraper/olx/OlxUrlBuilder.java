@@ -113,6 +113,30 @@ public class OlxUrlBuilder {
 		return this;
 	}
 
+	public HouseType getHouseType() {
+		return houseType;
+	}
+
+	public Integer getRooms() {
+		return rooms;
+	}
+
+	public City getCity() {
+		return city;
+	}
+
+	public Business getBusiness() {
+		return business;
+	}
+
+	public Order getOrderBy() {
+		return orderBy;
+	}
+
+	public Integer getPage() {
+		return page;
+	}
+
 	public String getUrl() {
 		if ((houseType == null) || (rooms == null) || (city == null) || (business == null) || (orderBy == null) || (page == null)) {
 			throw new NullPointerException("Cannot construct URL with null fields.");

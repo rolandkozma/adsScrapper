@@ -6,8 +6,8 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 
-@Entity("advertisment")
-public class Advertisment {
+@Entity("apartment")
+public class Apartment {
 
 	@Id
 	private ObjectId id;
@@ -27,8 +27,11 @@ public class Advertisment {
 	private String publishingSite;
 	private Date scrapingDate;
 	private String keyWord;
+	private Boolean isPromoted;
+	private Integer rooms;
+	private String business;
 
-	public Advertisment() {
+	public Apartment() {
 
 	}
 
@@ -160,6 +163,30 @@ public class Advertisment {
 		this.keyWord = keyWord;
 	}
 
+	public Boolean getIsPromoted() {
+		return isPromoted;
+	}
+
+	public void setIsPromoted(Boolean isPromoted) {
+		this.isPromoted = isPromoted;
+	}
+
+	public Integer getRooms() {
+		return rooms;
+	}
+
+	public void setRooms(Integer rooms) {
+		this.rooms = rooms;
+	}
+
+	public String getBusiness() {
+		return business;
+	}
+
+	public void setBusiness(String business) {
+		this.business = business;
+	}
+
 	public enum Site {
 		OLX("olx");
 
@@ -176,11 +203,12 @@ public class Advertisment {
 
 	@Override
 	public String toString() {
-		return "Advertisment [title=" + title + ",\n absUrl=" + absUrl + ",\n publishingDate=" + publishingDate + ",\n providedBy=" + providedBy
+		return "Apartment [title=" + title + ",\n absUrl=" + absUrl + ",\n publishingDate=" + publishingDate + ",\n providedBy=" + providedBy
 				+ ",\n compartimentalization=" + compartimentalization + ",\n surface=" + surface + ",\n constructionPeriod=" + constructionPeriod
 				+ ",\n endowments=" + endowments + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
 				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite
-				+ ",\n scrapingDate=" + scrapingDate + ",\n keyWord=" + keyWord + "]";
+				+ ",\n scrapingDate=" + scrapingDate + ",\n keyWord=" + keyWord + ",\n isPromoted=" + isPromoted + ",\n rooms=" + rooms
+				+ ",\n business=" + business + "]";
 	}
 
 }

@@ -1,19 +1,21 @@
 package adsScraper.dto;
 
-import adsScraper.mongo.entities.Advertisment;
+import adsScraper.mongo.entities.Apartment;
 
 public class MinimumAdsDetailDto {
 	private String title;
 	private Integer price;
 	private String absUrl;
+	private String keyWord;
 
 	public MinimumAdsDetailDto() {
 	}
 
-	public MinimumAdsDetailDto(Advertisment advertisment) {
-		title = advertisment.getTitle();
-		price = advertisment.getPrice();
-		absUrl = advertisment.getAbsUrl();
+	public MinimumAdsDetailDto(Apartment apartment) {
+		title = apartment.getTitle();
+		price = apartment.getPrice();
+		absUrl = apartment.getAbsUrl();
+		keyWord = apartment.getKeyWord();
 	}
 
 	public String getTitle() {
@@ -40,9 +42,17 @@ public class MinimumAdsDetailDto {
 		this.absUrl = absUrl;
 	}
 
+	public String getKeyWord() {
+		return keyWord;
+	}
+
+	public void setKeyWord(String keyWord) {
+		this.keyWord = keyWord;
+	}
+
 	@Override
 	public String toString() {
-		return "MinimumAdsDetailDto [title=" + title + ", price=" + price + ", absUrl=" + absUrl + "]";
+		return "MinimumAdsDetailDto [title=" + title + ", price=" + price + ", absUrl=" + absUrl + ", keyWord=" + keyWord + "]";
 	}
 
 }
