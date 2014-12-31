@@ -5,12 +5,15 @@ import java.util.Date;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
+import org.mongodb.morphia.annotations.Reference;
 
 @Entity("apartment")
 public class Apartment {
 
 	@Id
 	private ObjectId id;
+	@Reference
+	private ScrapingSession scrapingSession;
 	private String title;
 	private String absUrl;
 	private Date publishingDate;
@@ -25,7 +28,6 @@ public class Apartment {
 	private String userName;
 	private Integer referenceNumber;
 	private String publishingSite;
-	private Date scrapingDate;
 	private String keyWord;
 	private Boolean isPromoted;
 	private Integer rooms;
@@ -33,6 +35,10 @@ public class Apartment {
 
 	public Apartment() {
 
+	}
+
+	public ObjectId getId() {
+		return id;
 	}
 
 	public String getTitle() {
@@ -147,14 +153,6 @@ public class Apartment {
 		this.publishingSite = publishingSite;
 	}
 
-	public Date getScrapingDate() {
-		return scrapingDate;
-	}
-
-	public void setScrapingDate(Date scrapingDate) {
-		this.scrapingDate = scrapingDate;
-	}
-
 	public String getKeyWord() {
 		return keyWord;
 	}
@@ -187,6 +185,14 @@ public class Apartment {
 		this.business = business;
 	}
 
+	public ScrapingSession getScrapingSession() {
+		return scrapingSession;
+	}
+
+	public void setScrapingSession(ScrapingSession scrapingSession) {
+		this.scrapingSession = scrapingSession;
+	}
+
 	public enum Site {
 		OLX("olx");
 
@@ -206,9 +212,8 @@ public class Apartment {
 		return "Apartment [title=" + title + ",\n absUrl=" + absUrl + ",\n publishingDate=" + publishingDate + ",\n providedBy=" + providedBy
 				+ ",\n compartimentalization=" + compartimentalization + ",\n surface=" + surface + ",\n constructionPeriod=" + constructionPeriod
 				+ ",\n endowments=" + endowments + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
-				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite
-				+ ",\n scrapingDate=" + scrapingDate + ",\n keyWord=" + keyWord + ",\n isPromoted=" + isPromoted + ",\n rooms=" + rooms
-				+ ",\n business=" + business + "]";
+				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite + ",\n keyWord="
+				+ keyWord + ",\n isPromoted=" + isPromoted + ",\n rooms=" + rooms + ",\n business=" + business + ",\n " + scrapingSession + "]";
 	}
 
 }

@@ -38,6 +38,7 @@ public class EmailSender {
 			m.setSentDate(new java.util.Date());
 			m.setContent("Mail sent from JBoss AS 7", "text/plain");
 			Transport.send(m);
+			LOG.info("Email sent.");
 		} catch (MessagingException e) {
 			LOG.warn(e.getMessage(), e);
 		}

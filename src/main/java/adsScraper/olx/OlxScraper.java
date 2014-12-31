@@ -3,7 +3,6 @@ package adsScraper.olx;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -23,10 +22,7 @@ import org.slf4j.LoggerFactory;
 import adsScraper.dto.MinimumAdsDetailDto;
 import adsScraper.mongo.dao.ApartmentDao;
 import adsScraper.mongo.entities.Apartment;
-import adsScraper.olx.OlxUrlBuilder.Business;
-import adsScraper.olx.OlxUrlBuilder.City;
-import adsScraper.olx.OlxUrlBuilder.HouseType;
-import adsScraper.olx.OlxUrlBuilder.Order;
+import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.util.ParserUtil;
 
 @Stateless
@@ -55,33 +51,31 @@ public class OlxScraper {
 	private static final int PAUSE_TIME = 5000;
 	private static final String OWNER = "proprietar";
 
-	private Date currentDate;
-
 	@Inject
 	private ApartmentDao apartmentDao;
 
-	public List<MinimumAdsDetailDto> scrap(City city, Business business, HouseType houseType, int rooms, List<String> keyWords) {
-		currentDate = new Date();
-		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(city).business(business).houseType(houseType).orderBy(Order.DATE).rooms(rooms);
+	public List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> keyWords, Date lastScrapingDate, ScrapingSession scrapingSession) {
 
 		List<MinimumAdsDetailDto> allFoundApartments = new ArrayList<MinimumAdsDetailDto>();
 
-		List<MinimumAdsDetailDto> minimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, false);
+		List<MinimumAdsDetailDto> minimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, lastScrapingDate, scrapingSession, false);
 		allFoundApartments.addAll(minimumAdsDetailDtos);
 
-		List<MinimumAdsDetailDto> promotedMinimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, true);
+		List<MinimumAdsDetailDto> promotedMinimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, lastScrapingDate, scrapingSession, true);
 		allFoundApartments.addAll(promotedMinimumAdsDetailDtos);
 
 		return allFoundApartments;
 	}
 
-	private List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> keyWords, boolean isPromoted) {
-		Date lastRunDate = getLastRunDate(olxUrlBuilder, isPromoted);
+	private List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> keyWords, Date lastScrapingDate,
+			ScrapingSession scrapingSession, boolean isPromoted) {
 		boolean parseNextPage = true;
 		int pageNumber = 0;
 
 		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
-		LOG.info("--------------------- start scraping {} {} -----------------------\n", isPromoted ? "promoted" : "", olxUrlBuilder.getHouseType());
+		String infoLog = String.format("scraping %s %s %s rooms", isPromoted ? "promoted" : "", olxUrlBuilder.getHouseType(),
+				olxUrlBuilder.getRooms());
+		LOG.info("--------------------- start {} -----------------------\n", infoLog);
 		while (parseNextPage) {
 			pageNumber++;
 			String url = olxUrlBuilder.page(pageNumber).getUrl();
@@ -89,9 +83,9 @@ public class OlxScraper {
 			LOG.debug("got: {}", links.size());
 
 			for (Element link : links) {
-				Apartment apartment = createApartment(link, olxUrlBuilder, isPromoted);
+				Apartment apartment = createApartment(link, olxUrlBuilder, scrapingSession, isPromoted);
 
-				if ((apartment.getPublishingDate() == null) || apartment.getPublishingDate().before(lastRunDate)) {
+				if ((apartment.getPublishingDate() != null) && apartment.getPublishingDate().before(lastScrapingDate)) {
 					parseNextPage = false;
 					break;
 				}
@@ -106,7 +100,7 @@ public class OlxScraper {
 				pause(PAUSE_TIME);
 			}
 		}
-		LOG.info("--------------------- end scraping {} {} -----------------------\n", isPromoted ? "promoted" : "", olxUrlBuilder.getHouseType());
+		LOG.info("--------------------- end {} -----------------------\n", infoLog);
 		return minimumAdsDetailDtos;
 	}
 
@@ -138,10 +132,10 @@ public class OlxScraper {
 		return links;
 	}
 
-	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, boolean isPromoted) {
+	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, ScrapingSession scrapingSession, boolean isPromoted) {
 		Apartment apartment = new Apartment();
+		apartment.setScrapingSession(scrapingSession);
 		apartment.setPublishingSite(Apartment.Site.OLX.value());
-		apartment.setScrapingDate(currentDate);
 		apartment.setTitle(link.text());
 		apartment.setAbsUrl(link.absUrl("href"));
 
@@ -174,22 +168,6 @@ public class OlxScraper {
 			}
 		}
 		return apartment;
-	}
-
-	private Date getLastRunDate(OlxUrlBuilder olxUrlBuilder, boolean isPromoted) {
-		Date lastRunDate = apartmentDao.getLastRunDate(olxUrlBuilder.getRooms(), isPromoted);
-		if (lastRunDate == null) {
-			lastRunDate = getYesterdaysDate(currentDate);
-		}
-		LOG.debug("lastRunDate: {}", lastRunDate);
-		return lastRunDate;
-	}
-
-	private Date getYesterdaysDate(Date currentDate) {
-		Calendar calendar = Calendar.getInstance(LOCALE);
-		calendar.setTime(currentDate);
-		calendar.add(Calendar.DATE, -1);
-		return calendar.getTime();
 	}
 
 	private void pause(long millis) {

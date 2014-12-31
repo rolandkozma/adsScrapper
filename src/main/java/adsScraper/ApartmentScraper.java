@@ -2,26 +2,44 @@ package adsScraper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import adsScraper.dto.MinimumAdsDetailDto;
 import adsScraper.email.EmailSender;
+import adsScraper.mongo.dao.ScrapingSessionDao;
+import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.olx.OlxScraper;
+import adsScraper.olx.OlxUrlBuilder;
 import adsScraper.olx.OlxUrlBuilder.Business;
 import adsScraper.olx.OlxUrlBuilder.City;
 import adsScraper.olx.OlxUrlBuilder.HouseType;
+import adsScraper.olx.OlxUrlBuilder.Order;
 
 @Stateless
 public class ApartmentScraper {
+
+	private static final Logger LOG = LoggerFactory.getLogger(ApartmentScraper.class);
+	private static final Locale LOCALE = new Locale("RO");
 
 	@Inject
 	private OlxScraper olxScraper;
 
 	@Inject
 	private EmailSender mailSender;
+
+	@Inject
+	private ScrapingSessionDao scrapingSessionDao;
+
+	private Date currentDate;
 
 	private static final List<String> KEY_WORDS = Arrays.asList("babes", "bisericii ortodoxe", "botanica", "brd", "centru", "central ", "central.",
 			"central,", "central;", "central!", "cipariu", "dorobantilor", "garibaldi", "godeanu", "mihai viteazu", "nasaud", "observator", "opera",
@@ -32,28 +50,59 @@ public class ApartmentScraper {
 	public List<MinimumAdsDetailDto> scrap() {
 		List<MinimumAdsDetailDto> allApartments = new ArrayList<>();
 
-		List<MinimumAdsDetailDto> olxApartments = scrapOlx();
+		currentDate = new Date();
+		Date lastScrapingDate = getLastScrapingDate();
+		ScrapingSession scrapingSession = createScrapingSession();
+
+		List<MinimumAdsDetailDto> olxApartments = scrapOlx(lastScrapingDate, scrapingSession);
 		allApartments.addAll(olxApartments);
 
 		// TODO scrap apartments from other sites
 
 		mailSender.sendEmail(allApartments);
+
+		LOG.info("This scraping session has scraped {} records!", scrapingSession.getApartments().size());
 		return allApartments;
 	}
 
-	private List<MinimumAdsDetailDto> scrapOlx() {
+	public ScrapingSession createScrapingSession() {
+		ScrapingSession scrapingSession = new ScrapingSession(currentDate);
+		scrapingSessionDao.save(scrapingSession);
+		return scrapingSession;
+	}
+
+	private List<MinimumAdsDetailDto> scrapOlx(Date lastScrapingDate, ScrapingSession scrapingSession) {
 		List<MinimumAdsDetailDto> allFoundApartments = new ArrayList<MinimumAdsDetailDto>();
 
-		List<MinimumAdsDetailDto> found2RoomApartments = olxScraper.scrap(City.CLUJ_NAPOCA, Business.PRIVATE, HouseType.APARTMENT, 2, KEY_WORDS);
+		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(City.CLUJ_NAPOCA).business(Business.PRIVATE).houseType(HouseType.APARTMENT)
+				.orderBy(Order.DATE);
+
+		List<MinimumAdsDetailDto> found2RoomApartments = olxScraper.scrap(olxUrlBuilder.rooms(2), KEY_WORDS, lastScrapingDate, scrapingSession);
 		allFoundApartments.addAll(found2RoomApartments);
 
-		List<MinimumAdsDetailDto> found3RoomApartments = olxScraper.scrap(City.CLUJ_NAPOCA, Business.PRIVATE, HouseType.APARTMENT, 3, KEY_WORDS);
+		List<MinimumAdsDetailDto> found3RoomApartments = olxScraper.scrap(olxUrlBuilder.rooms(3), KEY_WORDS, lastScrapingDate, scrapingSession);;
 		allFoundApartments.addAll(found3RoomApartments);
 
-		List<MinimumAdsDetailDto> found4RoomApartments = olxScraper.scrap(City.CLUJ_NAPOCA, Business.PRIVATE, HouseType.APARTMENT, 4, KEY_WORDS);
+		List<MinimumAdsDetailDto> found4RoomApartments = olxScraper.scrap(olxUrlBuilder.rooms(4), KEY_WORDS, lastScrapingDate, scrapingSession);
 		allFoundApartments.addAll(found4RoomApartments);
 
 		return allFoundApartments;
+	}
+
+	private Date getLastScrapingDate() {
+		Date lastScrapingDate = scrapingSessionDao.getLastScrapingDate();
+		if (lastScrapingDate == null) {
+			lastScrapingDate = getYesterdaysDate();
+		}
+		LOG.debug("lastScrapingDate: {}", lastScrapingDate);
+		return lastScrapingDate;
+	}
+
+	private Date getYesterdaysDate() {
+		Calendar calendar = Calendar.getInstance(LOCALE);
+		calendar.setTime(currentDate);
+		calendar.add(Calendar.DATE, -1);
+		return calendar.getTime();
 	}
 
 }
