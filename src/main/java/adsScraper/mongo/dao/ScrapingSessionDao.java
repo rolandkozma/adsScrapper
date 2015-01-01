@@ -16,7 +16,6 @@ public class ScrapingSessionDao extends RealEstateAdsBasicDao<ScrapingSession, O
 		Date lastRunDate = null;
 		ScrapingSession scrapingSession = createQuery().order("-scrapingDate").limit(1).get();
 		if (scrapingSession != null) {
-			System.out.println(scrapingSession.getApartments().size());
 			lastRunDate = scrapingSession.getScrapingDate();
 		}
 		return lastRunDate;

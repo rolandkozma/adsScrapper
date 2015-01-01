@@ -29,7 +29,6 @@ public class Apartment {
 	private Integer referenceNumber;
 	private String publishingSite;
 	private String keyWord;
-	private Boolean isPromoted;
 	private Integer rooms;
 	private String business;
 
@@ -161,14 +160,6 @@ public class Apartment {
 		this.keyWord = keyWord;
 	}
 
-	public Boolean getIsPromoted() {
-		return isPromoted;
-	}
-
-	public void setIsPromoted(Boolean isPromoted) {
-		this.isPromoted = isPromoted;
-	}
-
 	public Integer getRooms() {
 		return rooms;
 	}
@@ -213,7 +204,7 @@ public class Apartment {
 				+ ",\n compartimentalization=" + compartimentalization + ",\n surface=" + surface + ",\n constructionPeriod=" + constructionPeriod
 				+ ",\n endowments=" + endowments + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
 				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite + ",\n keyWord="
-				+ keyWord + ",\n isPromoted=" + isPromoted + ",\n rooms=" + rooms + ",\n business=" + business + ",\n " + scrapingSession + "]";
+				+ keyWord + ",\n rooms=" + rooms + ",\n business=" + business + ",\n " + scrapingSession + "]";
 	}
 
 }

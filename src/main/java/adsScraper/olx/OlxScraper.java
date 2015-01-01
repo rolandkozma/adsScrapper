@@ -54,43 +54,29 @@ public class OlxScraper {
 	@Inject
 	private ApartmentDao apartmentDao;
 
-	public List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> keyWords, Date lastScrapingDate, ScrapingSession scrapingSession) {
-
-		List<MinimumAdsDetailDto> allFoundApartments = new ArrayList<MinimumAdsDetailDto>();
-
-		List<MinimumAdsDetailDto> minimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, lastScrapingDate, scrapingSession, false);
-		allFoundApartments.addAll(minimumAdsDetailDtos);
-
-		List<MinimumAdsDetailDto> promotedMinimumAdsDetailDtos = scrap(olxUrlBuilder, keyWords, lastScrapingDate, scrapingSession, true);
-		allFoundApartments.addAll(promotedMinimumAdsDetailDtos);
-
-		return allFoundApartments;
-	}
-
-	private List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> keyWords, Date lastScrapingDate,
-			ScrapingSession scrapingSession, boolean isPromoted) {
+	public List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> wantedKeyWords, List<String> unwantedKeyWords,
+			Date lastScrapingDate, ScrapingSession scrapingSession) {
+		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
 		boolean parseNextPage = true;
 		int pageNumber = 0;
 
-		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
-		String infoLog = String.format("scraping %s %s %s rooms", isPromoted ? "promoted" : "", olxUrlBuilder.getHouseType(),
-				olxUrlBuilder.getRooms());
+		String infoLog = String.format("scraping %s %s rooms", olxUrlBuilder.getHouseType(), olxUrlBuilder.getRooms());
 		LOG.info("--------------------- start {} -----------------------\n", infoLog);
 		while (parseNextPage) {
 			pageNumber++;
 			String url = olxUrlBuilder.page(pageNumber).getUrl();
-			Elements links = getAdLinks(url, isPromoted);
+			Elements links = getAdLinks(url);
 			LOG.debug("got: {}", links.size());
 
 			for (Element link : links) {
-				Apartment apartment = createApartment(link, olxUrlBuilder, scrapingSession, isPromoted);
+				Apartment apartment = createApartment(link, olxUrlBuilder, scrapingSession);
 
 				if ((apartment.getPublishingDate() != null) && apartment.getPublishingDate().before(lastScrapingDate)) {
 					parseNextPage = false;
 					break;
 				}
 
-				if (isPublishedByOwner(apartment) && hasKeyWords(apartment, keyWords)) {
+				if (isPublishedByOwner(apartment) && hasKeyWords(apartment, wantedKeyWords) && !hasKeyWords(apartment, unwantedKeyWords)) {
 					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(apartment));
 					scrapingSession.getApartments().add(apartment);
 					apartmentDao.save(apartment);
@@ -123,17 +109,16 @@ public class OlxScraper {
 		return hasKeyWords;
 	}
 
-	private Elements getAdLinks(String url, boolean isPromoted) {
+	private Elements getAdLinks(String url) {
 		Elements links = new Elements();
 		Document doc = getDocument(url);
 		if (doc != null) {
-			links = doc.select("a[href]").select(".marginright5").select(".link.linkWithHash")
-					.select(isPromoted ? ".detailsLinkPromoted" : ".detailsLink");
+			links = doc.select("table#offers_table a[href]").select(".marginright5").select(".link.linkWithHash");
 		}
 		return links;
 	}
 
-	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, ScrapingSession scrapingSession, boolean isPromoted) {
+	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, ScrapingSession scrapingSession) {
 		Apartment apartment = new Apartment();
 		apartment.setScrapingSession(scrapingSession);
 		apartment.setPublishingSite(Apartment.Site.OLX.value());
@@ -142,7 +127,6 @@ public class OlxScraper {
 
 		Document adsDetail = getDocument(apartment.getAbsUrl());
 		if (adsDetail != null) {
-			apartment.setIsPromoted(isPromoted);
 			apartment.setBusiness(olxUrlBuilder.getBusiness().value());
 			apartment.setRooms(olxUrlBuilder.getRooms());
 			apartment.setPublishingDate(getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate"));
@@ -227,6 +211,7 @@ public class OlxScraper {
 	}
 
 	private Document getDocument(String url) {
+		LOG.info(url);
 		Document doc = null;
 		int retriesNr = 3;
 		int i = 0;
