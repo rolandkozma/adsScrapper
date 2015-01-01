@@ -92,6 +92,7 @@ public class OlxScraper {
 
 				if (isPublishedByOwner(apartment) && hasKeyWords(apartment, keyWords)) {
 					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(apartment));
+					scrapingSession.getApartments().add(apartment);
 					apartmentDao.save(apartment);
 				}
 

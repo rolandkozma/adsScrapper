@@ -61,12 +61,12 @@ public class ApartmentScraper {
 
 		mailSender.sendEmail(allApartments);
 
-		LOG.info("This scraping session has scraped {} records!", scrapingSession.getApartments().size());
+		LOG.info("This scraping session has scraped {} records!", scrapingSession.getApartments().size()); // TODO why doesn't work ?!
 		return allApartments;
 	}
 
 	public ScrapingSession createScrapingSession() {
-		ScrapingSession scrapingSession = new ScrapingSession(currentDate);
+		ScrapingSession scrapingSession = new ScrapingSession(currentDate, HouseType.APARTMENT.name().toLowerCase());
 		scrapingSessionDao.save(scrapingSession);
 		return scrapingSession;
 	}

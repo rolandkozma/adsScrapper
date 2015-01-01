@@ -15,6 +15,7 @@ public class ScrapingSession {
 	@Id
 	private ObjectId id;
 	private Date scrapingDate;
+	private String type;
 	@Reference
 	List<Apartment> apartments = new ArrayList<>();
 
@@ -22,8 +23,9 @@ public class ScrapingSession {
 
 	}
 
-	public ScrapingSession(Date scrapingDate) {
+	public ScrapingSession(Date scrapingDate, String type) {
 		this.scrapingDate = scrapingDate;
+		this.type = type;
 	}
 
 	public ObjectId getId() {
@@ -33,8 +35,17 @@ public class ScrapingSession {
 	public Date getScrapingDate() {
 		return scrapingDate;
 	}
+
 	public void setScrapingDate(Date scrapingDate) {
 		this.scrapingDate = scrapingDate;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
 	}
 
 	public List<Apartment> getApartments() {
@@ -47,7 +58,7 @@ public class ScrapingSession {
 
 	@Override
 	public String toString() {
-		return "ScrapingSession [id=" + id + ", scrapingDate=" + scrapingDate + "]";
+		return "ScrapingSession [id=" + id + ", scrapingDate=" + scrapingDate + ", type=" + type + "]";
 	}
 
 }
