@@ -1,6 +1,6 @@
 package adsScraper.dto;
 
-import adsScraper.mongo.entities.Apartment;
+import adsScraper.mongo.entities.Advertisment;
 
 public class MinimumAdsDetailDto {
 	private String title;
@@ -11,11 +11,11 @@ public class MinimumAdsDetailDto {
 	public MinimumAdsDetailDto() {
 	}
 
-	public MinimumAdsDetailDto(Apartment apartment) {
-		title = apartment.getTitle();
-		price = apartment.getPrice();
-		url = apartment.getUrl();
-		keyWord = apartment.getKeyWord();
+	public MinimumAdsDetailDto(Advertisment advertisment) {
+		title = advertisment.getTitle();
+		price = advertisment.getPrice();
+		url = advertisment.getUrl();
+		keyWord = advertisment.getKeyWord();
 	}
 
 	public String getTitle() {

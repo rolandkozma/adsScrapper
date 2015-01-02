@@ -9,6 +9,8 @@ import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Reference;
 
+import adsScraper.olx.OlxUrlBuilder.RealEstateType;
+
 @Entity("scraping_session")
 public class ScrapingSession {
 
@@ -18,14 +20,18 @@ public class ScrapingSession {
 	private String type;
 	@Reference
 	List<Apartment> apartments = new ArrayList<>();
+	@Reference
+	List<House> houses = new ArrayList<>();
+	@Reference
+	List<Land> lands = new ArrayList<>();
 
 	public ScrapingSession() {
 
 	}
 
-	public ScrapingSession(Date scrapingDate, String type) {
+	public ScrapingSession(Date scrapingDate, RealEstateType realEstateType) {
 		this.scrapingDate = scrapingDate;
-		this.type = type;
+		this.type = realEstateType.name().toLowerCase();
 	}
 
 	public ObjectId getId() {
@@ -54,6 +60,22 @@ public class ScrapingSession {
 
 	public void setApartments(List<Apartment> apartments) {
 		this.apartments = apartments;
+	}
+
+	public List<House> getHouses() {
+		return houses;
+	}
+
+	public void setHouses(List<House> houses) {
+		this.houses = houses;
+	}
+
+	public List<Land> getLands() {
+		return lands;
+	}
+
+	public void setLands(List<Land> lands) {
+		this.lands = lands;
 	}
 
 	@Override

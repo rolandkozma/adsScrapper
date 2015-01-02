@@ -5,6 +5,7 @@ import java.util.Date;
 import org.bson.types.ObjectId;
 
 import adsScraper.mongo.entities.ScrapingSession;
+import adsScraper.olx.OlxUrlBuilder.RealEstateType;
 
 public class ScrapingSessionDao extends RealEstateAdsBasicDao<ScrapingSession, ObjectId> {
 
@@ -12,12 +13,13 @@ public class ScrapingSessionDao extends RealEstateAdsBasicDao<ScrapingSession, O
 		super(ScrapingSession.class);
 	}
 
-	public Date getLastScrapingDate() {
-		Date lastRunDate = null;
-		ScrapingSession scrapingSession = createQuery().order("-scrapingDate").limit(1).get();
+	public Date getLastScrapingDate(RealEstateType realEstateType) {
+		Date lastScrapingDate = null;
+		ScrapingSession scrapingSession = createQuery().field("type").equal(realEstateType.name().toLowerCase()).order("-scrapingDate").limit(1)
+				.get();
 		if (scrapingSession != null) {
-			lastRunDate = scrapingSession.getScrapingDate();
+			lastScrapingDate = scrapingSession.getScrapingDate();
 		}
-		return lastRunDate;
+		return lastScrapingDate;
 	}
 }

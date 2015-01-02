@@ -9,9 +9,6 @@ import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.ejb.Stateless;
-import javax.inject.Inject;
-
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -20,76 +17,63 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import adsScraper.dto.MinimumAdsDetailDto;
-import adsScraper.mongo.dao.ApartmentDao;
+import adsScraper.mongo.entities.Advertisment;
 import adsScraper.mongo.entities.Apartment;
 import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.util.ParserUtil;
 
-import com.gargoylesoftware.htmlunit.WebClient;
-
-@Stateless
-public class OlxScraper {
+public abstract class OlxScraper {
 	private static final Logger LOG = LoggerFactory.getLogger(OlxScraper.class);
 
+	// private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
 	private static final String REFERENCE_NUMBER_SELECTOR = "div.offerheadinner p small span span span.rel";
 	private static final String PRICE_SELECTOR = "div#offeractions div div div.pricelabel strong";
 	private static final String USER_NAME_SELECTOR = "div#offeractions div.userbox p.userdetails span.block:nth-child(1)";
-	// private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
 	private static final String DESCRIPTION_SELECTOR = "div#textContent p";
 	private static final String PUBLISHING_DATE_SELECTOR = "div.offerheadinner p small span";
 	private static final String TABLE_DETAILS_DIV_SELECTOR = "div.descriptioncontent table.details tr td div";
+	private static final String PROVIDED_BY_TEXT = "oferit";
+	private static final String SURFACE_TEXT = "suprafata";
 
 	private static final Locale LOCALE = new Locale("RO");
 	private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT, LOCALE);
 	private static final Pattern DATE_PATTERN = Pattern.compile("\\d{1,2} \\w* \\d{4}");
 	private static final Pattern TIME_PATTERN = Pattern.compile("\\d{1,2}:\\d{1,2}");
 
-	private static final String PROVIDED_BY_TEXT = "oferit";
-	private static final String COMPARTIMENTALIZATION_TEXT = "compartimentare";
-	private static final String SURFACE_TEXT = "suprafata";
-	private static final String CONSTRUCTION_PERIOD_TEXT = "constructie";
-	private static final String ENDOWMENTS_TEXT = "locuinta";
-
 	private static final int PAUSE_TIME = 5000;
 	private static final String OWNER = "proprietar";
 
-	@Inject
-	private ApartmentDao apartmentDao;
-
-	@Inject
-	private WebClient webClient;
-
 	public List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> wantedKeyWords, List<String> unwantedKeyWords,
 			Date lastScrapingDate, ScrapingSession scrapingSession) {
+		setRealEstateType(olxUrlBuilder);
 		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
 		boolean parseNextPage = true;
 		int pageNumber = 0;
 
-		String infoLog = String.format("scraping %s %s rooms", olxUrlBuilder.getHouseType(), olxUrlBuilder.getRooms());
+		String infoLog = getInfoLog(olxUrlBuilder);
 		LOG.info("--------------------- start {} -----------------------\n", infoLog);
 		while (parseNextPage) {
 			pageNumber++;
 			String pageUrl = olxUrlBuilder.page(pageNumber).getUrl();
-			Elements links = getAdLinks(pageUrl);
-			LOG.debug("got: {}", links.size());
+			Elements links = getAdvertismentLinks(pageUrl);
 
 			for (Element link : links) {
-				Apartment apartment = createApartment(link, olxUrlBuilder);
+				Advertisment advertisment = createAdvertisment(link, olxUrlBuilder);
 
-				if (isPublishedBeforeLastScrapingDate(lastScrapingDate, apartment)) {
+				if (isPublishedBeforeLastScrapingDate(advertisment, lastScrapingDate)) {
 					parseNextPage = false;
 					break;
 				}
 
-				if (isRelevant(apartment, wantedKeyWords, unwantedKeyWords)) {
-					addToScrapingSession(scrapingSession, apartment);
+				if (isRelevant(advertisment, wantedKeyWords, unwantedKeyWords)) {
+					addToScrapingSession(scrapingSession, advertisment);
 
-					String phoneNumber = getPhoneNumber(apartment.getUrl());
-					apartment.setPhoneNumber(phoneNumber);
+					String phoneNumber = getPhoneNumber(advertisment.getUrl());
+					advertisment.setPhoneNumber(phoneNumber);
 
-					apartmentDao.save(apartment);
-					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(apartment));
-					LOG.info(apartment.toString());
+					saveAdvertisment(advertisment);
+					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(advertisment));
+					LOG.info(advertisment.toString());
 				}
 
 				LOG.info("---------------------------------------------------------------------------------------------------\n");
@@ -100,39 +84,11 @@ public class OlxScraper {
 		return minimumAdsDetailDtos;
 	}
 
-	private void addToScrapingSession(ScrapingSession scrapingSession, Apartment apartment) {
-		apartment.setScrapingSession(scrapingSession);
-		scrapingSession.getApartments().add(apartment);
-	}
+	public abstract String getInfoLog(OlxUrlBuilder olxUrlBuilder);
 
-	private boolean isRelevant(Apartment apartment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
-		return isPublishedByOwner(apartment) && hasKeyWords(apartment, wantedKeyWords) && !hasKeyWords(apartment, unwantedKeyWords);
-	}
+	public abstract void setRealEstateType(OlxUrlBuilder olxUrlBuilder);
 
-	private boolean isPublishedBeforeLastScrapingDate(Date lastScrapingDate, Apartment apartment) {
-		return (apartment.getPublishingDate() != null) && apartment.getPublishingDate().before(lastScrapingDate);
-	}
-
-	private boolean isPublishedByOwner(Apartment apartment) {
-		return OWNER.equalsIgnoreCase(apartment.getProvidedBy());
-	}
-
-	private boolean hasKeyWords(Apartment apartment, List<String> keyWords) {
-		boolean hasKeyWords = false;
-		String title = apartment.getTitle() == null ? "" : apartment.getTitle();
-		String description = apartment.getDescription() == null ? "" : apartment.getDescription();
-		String fullDescription = String.format("%s %s", title, description).toLowerCase();
-
-		for (String key : keyWords) {
-			if (fullDescription.contains(key.toLowerCase())) {
-				hasKeyWords = true;
-				apartment.setKeyWord(key);
-			}
-		}
-		return hasKeyWords;
-	}
-
-	private Elements getAdLinks(String url) {
+	private Elements getAdvertismentLinks(String url) {
 		Elements links = new Elements();
 		Document doc = getDocument(url);
 		if (doc != null) {
@@ -141,62 +97,80 @@ public class OlxScraper {
 		return links;
 	}
 
-	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder) {
-		Apartment apartment = new Apartment();
-		apartment.setPublishingSite(Apartment.Site.OLX.value());
-		apartment.setTitle(link.text());
-		apartment.setUrl(link.absUrl("href"));
+	private Advertisment createAdvertisment(Element link, OlxUrlBuilder olxUrlBuilder) {
+		Advertisment advertisment = createAdvertisment();
+		advertisment.setPublishingSite(Apartment.Site.OLX.value());
+		advertisment.setTitle(link.text());
+		advertisment.setUrl(link.absUrl("href"));
 
-		Document adsDetail = getDocument(apartment.getUrl());
-		if (adsDetail != null) {
-			apartment.setBusiness(olxUrlBuilder.getBusiness().value());
-			apartment.setRooms(olxUrlBuilder.getRooms());
-			apartment.setPublishingDate(getPublishingDate(adsDetail, PUBLISHING_DATE_SELECTOR, "publishingDate"));
-			apartment.setReferenceNumber(ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
-			apartment.setDescription(ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description"));
-			apartment.setPrice(ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price"));
-			apartment.setUserName(ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName"));
+		Document advertismentPage = getDocument(advertisment.getUrl());
+		if (advertismentPage != null) {
+			advertisment.setBusiness(olxUrlBuilder.getBusiness().value());
+			advertisment.setPublishingDate(getPublishingDate(advertismentPage, PUBLISHING_DATE_SELECTOR, "publishingDate"));
+			advertisment.setReferenceNumber(ParserUtil.getInteger(advertismentPage, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
+			advertisment.setDescription(ParserUtil.getString(advertismentPage, DESCRIPTION_SELECTOR, "description"));
+			advertisment.setPrice(ParserUtil.getInteger(advertismentPage, PRICE_SELECTOR, "price"));
+			advertisment.setUserName(ParserUtil.getString(advertismentPage, USER_NAME_SELECTOR, "userName"));
 
-			Elements elements = adsDetail.select(TABLE_DETAILS_DIV_SELECTOR);
-			for (Element element : elements) {
-				String elementText = element.ownText().trim().toLowerCase();
-				if (elementText.contains(PROVIDED_BY_TEXT)) {
-					apartment.setProvidedBy(ParserUtil.getString(element, "a", "providedBy"));
-				} else if (elementText.contains(COMPARTIMENTALIZATION_TEXT)) {
-					apartment.setCompartimentalization(ParserUtil.getString(element, "a", "compartimentalization"));
-				} else if (elementText.contains(SURFACE_TEXT)) {
-					apartment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
-				} else if (elementText.contains(CONSTRUCTION_PERIOD_TEXT)) {
-					apartment.setConstructionPeriod(ParserUtil.getString(element, "a", "constructionPeriod"));
-				} else if (elementText.contains(ENDOWMENTS_TEXT)) {
-					apartment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
-				}
+			Elements detailElements = advertismentPage.select(TABLE_DETAILS_DIV_SELECTOR);
+			setAdvertismentDetails(advertisment, detailElements, olxUrlBuilder);
+		}
+		return advertisment;
+	}
+
+	public abstract Advertisment createAdvertisment();
+
+	private void setAdvertismentDetails(Advertisment advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+		for (Element element : detailElements) {
+			String elementText = element.ownText().trim().toLowerCase();
+			if (elementText.contains(PROVIDED_BY_TEXT)) {
+				advertisment.setProvidedBy(ParserUtil.getString(element, "a", "providedBy"));
+			} else if (elementText.contains(SURFACE_TEXT)) {
+				advertisment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
 			}
 		}
-		return apartment;
+
+		setAdvertismentAditionalDetails(advertisment, detailElements, olxUrlBuilder);
 	}
+
+	public abstract void setAdvertismentAditionalDetails(Advertisment advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder);
+
+	private boolean isPublishedBeforeLastScrapingDate(Advertisment advertisment, Date lastScrapingDate) {
+		return (advertisment.getPublishingDate() != null) && advertisment.getPublishingDate().before(lastScrapingDate);
+	}
+
+	private boolean isRelevant(Advertisment advertisment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
+		return isPublishedByOwner(advertisment) && (wantedKeyWords.isEmpty() || hasKeyWords(advertisment, wantedKeyWords))
+				&& (unwantedKeyWords.isEmpty() || !hasKeyWords(advertisment, unwantedKeyWords));
+	}
+
+	private boolean isPublishedByOwner(Advertisment advertisment) {
+		return OWNER.equalsIgnoreCase(advertisment.getProvidedBy());
+	}
+
+	private boolean hasKeyWords(Advertisment advertisment, List<String> keyWords) {
+		boolean hasKeyWords = false;
+		String title = advertisment.getTitle() == null ? "" : advertisment.getTitle();
+		String description = advertisment.getDescription() == null ? "" : advertisment.getDescription();
+		String fullDescription = String.format("%s %s", title, description).toLowerCase();
+
+		for (String key : keyWords) {
+			if (fullDescription.contains(key.toLowerCase())) {
+				hasKeyWords = true;
+				advertisment.setKeyWord(key);
+			}
+		}
+		return hasKeyWords;
+	}
+
+	public abstract void addToScrapingSession(ScrapingSession scrapingSession, Advertisment advertisment);
 
 	private String getPhoneNumber(String detailsPageurl) {
-		// LOG.info(" ---- GET PHONE NR. from: {}", detailsPageurl);
-		// try {
-		// HtmlPage page = webClient.getPage(detailsPageurl);
-		// HtmlUnorderedList ul = page.getHtmlElementById("contact_methods");
-		// Page ulContent = ul.click();
-		// WebResponse webResponse = ulContent.getWebResponse();
-		// String content = webResponse.getContentAsString();
-		// System.out.println(content);
-		//
-		// Document adsDetail = Jsoup.parse(content);
-		// if (adsDetail != null) {
-		// ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNr");
-		// }
-		//
-		// } catch (Exception e) {
-		// LOG.warn(e.getMessage(), e);
-		// }
-
+		// TODO
 		return null;
 	}
+
+	public abstract void saveAdvertisment(Advertisment advertisment);
 
 	private void pause(long millis) {
 		try {
@@ -230,6 +204,7 @@ public class OlxScraper {
 		}
 		return publishingDate;
 	}
+
 	private String getDate(String dateText) {
 		String date = null;
 		Matcher matcher = DATE_PATTERN.matcher(dateText);
