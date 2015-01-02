@@ -5,7 +5,7 @@ import adsScraper.mongo.entities.Apartment;
 public class MinimumAdsDetailDto {
 	private String title;
 	private Integer price;
-	private String absUrl;
+	private String url;
 	private String keyWord;
 
 	public MinimumAdsDetailDto() {
@@ -14,7 +14,7 @@ public class MinimumAdsDetailDto {
 	public MinimumAdsDetailDto(Apartment apartment) {
 		title = apartment.getTitle();
 		price = apartment.getPrice();
-		absUrl = apartment.getAbsUrl();
+		url = apartment.getUrl();
 		keyWord = apartment.getKeyWord();
 	}
 
@@ -34,12 +34,12 @@ public class MinimumAdsDetailDto {
 		this.price = price;
 	}
 
-	public String getAbsUrl() {
-		return absUrl;
+	public String getUrl() {
+		return url;
 	}
 
-	public void setAbsUrl(String absUrl) {
-		this.absUrl = absUrl;
+	public void setUrl(String url) {
+		this.url = url;
 	}
 
 	public String getKeyWord() {
@@ -52,7 +52,7 @@ public class MinimumAdsDetailDto {
 
 	@Override
 	public String toString() {
-		return "MinimumAdsDetailDto [title=" + title + ", price=" + price + ", absUrl=" + absUrl + ", keyWord=" + keyWord + "]";
+		return "MinimumAdsDetailDto [title=" + title + ", price=" + price + ", absUrl=" + url + ", keyWord=" + keyWord + "]";
 	}
 
 }

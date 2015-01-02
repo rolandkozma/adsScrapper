@@ -6,6 +6,7 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Transient;
 
 @Entity("apartment")
 public class Apartment {
@@ -15,7 +16,7 @@ public class Apartment {
 	@Reference
 	private ScrapingSession scrapingSession;
 	private String title;
-	private String absUrl;
+	private String url;
 	private Date publishingDate;
 	private String providedBy;
 	private String compartimentalization;
@@ -31,6 +32,8 @@ public class Apartment {
 	private String keyWord;
 	private Integer rooms;
 	private String business;
+	@Transient
+	private boolean isRelevant;
 
 	public Apartment() {
 
@@ -48,12 +51,12 @@ public class Apartment {
 		this.title = title;
 	}
 
-	public String getAbsUrl() {
-		return absUrl;
+	public String getUrl() {
+		return url;
 	}
 
-	public void setAbsUrl(String absUrl) {
-		this.absUrl = absUrl;
+	public void setUrl(String url) {
+		this.url = url;
 	}
 
 	public Date getPublishingDate() {
@@ -184,6 +187,14 @@ public class Apartment {
 		this.scrapingSession = scrapingSession;
 	}
 
+	public boolean isRelevant() {
+		return isRelevant;
+	}
+
+	public void setIsRelevant(boolean isRelevant) {
+		this.isRelevant = isRelevant;
+	}
+
 	public enum Site {
 		OLX("olx");
 
@@ -200,11 +211,11 @@ public class Apartment {
 
 	@Override
 	public String toString() {
-		return "Apartment [title=" + title + ",\n absUrl=" + absUrl + ",\n publishingDate=" + publishingDate + ",\n providedBy=" + providedBy
+		return "Apartment [title=" + title + ",\n absUrl=" + url + ",\n publishingDate=" + publishingDate + ",\n providedBy=" + providedBy
 				+ ",\n compartimentalization=" + compartimentalization + ",\n surface=" + surface + ",\n constructionPeriod=" + constructionPeriod
 				+ ",\n endowments=" + endowments + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
 				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite + ",\n keyWord="
-				+ keyWord + ",\n rooms=" + rooms + ",\n business=" + business + ",\n " + scrapingSession + "]";
+				+ keyWord + ",\n rooms=" + rooms + ",\n business=" + business + ",\n isRelevant=" + isRelevant + ",\n " + scrapingSession + "]";
 	}
 
 }

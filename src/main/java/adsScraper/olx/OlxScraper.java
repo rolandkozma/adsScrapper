@@ -69,20 +69,19 @@ public class OlxScraper {
 			LOG.debug("got: {}", links.size());
 
 			for (Element link : links) {
-				Apartment apartment = createApartment(link, olxUrlBuilder, scrapingSession);
+				Apartment apartment = createApartment(link, olxUrlBuilder, scrapingSession, wantedKeyWords, unwantedKeyWords);
 
 				if ((apartment.getPublishingDate() != null) && apartment.getPublishingDate().before(lastScrapingDate)) {
 					parseNextPage = false;
 					break;
 				}
 
-				if (isPublishedByOwner(apartment) && hasKeyWords(apartment, wantedKeyWords) && !hasKeyWords(apartment, unwantedKeyWords)) {
+				if (apartment.isRelevant()) {
 					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(apartment));
-					scrapingSession.getApartments().add(apartment);
 					apartmentDao.save(apartment);
+					LOG.info(apartment.toString());
 				}
 
-				LOG.info(apartment.toString());
 				LOG.info("---------------------------------------------------------------------------------------------------\n");
 				pause(PAUSE_TIME);
 			}
@@ -95,10 +94,11 @@ public class OlxScraper {
 		return OWNER.equalsIgnoreCase(apartment.getProvidedBy());
 	}
 
-	public boolean hasKeyWords(Apartment apartment, List<String> keyWords) {
+	private boolean hasKeyWords(Apartment apartment, List<String> keyWords) {
 		boolean hasKeyWords = false;
-		if (apartment.getDescription() != null) {
-			String lowerCaseDescription = apartment.getDescription().toLowerCase();
+		String description = apartment.getDescription();
+		if (description != null) {
+			String lowerCaseDescription = description.toLowerCase();
 			for (String key : keyWords) {
 				if (lowerCaseDescription.contains(key.toLowerCase())) {
 					hasKeyWords = true;
@@ -118,14 +118,14 @@ public class OlxScraper {
 		return links;
 	}
 
-	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, ScrapingSession scrapingSession) {
+	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, ScrapingSession scrapingSession, List<String> wantedKeyWords,
+			List<String> unwantedKeyWords) {
 		Apartment apartment = new Apartment();
-		apartment.setScrapingSession(scrapingSession);
 		apartment.setPublishingSite(Apartment.Site.OLX.value());
 		apartment.setTitle(link.text());
-		apartment.setAbsUrl(link.absUrl("href"));
+		apartment.setUrl(link.absUrl("href"));
 
-		Document adsDetail = getDocument(apartment.getAbsUrl());
+		Document adsDetail = getDocument(apartment.getUrl());
 		if (adsDetail != null) {
 			apartment.setBusiness(olxUrlBuilder.getBusiness().value());
 			apartment.setRooms(olxUrlBuilder.getRooms());
@@ -133,7 +133,6 @@ public class OlxScraper {
 			apartment.setReferenceNumber(ParserUtil.getInteger(adsDetail, REFERENCE_NUMBER_SELECTOR, "referenceNumber"));
 			apartment.setDescription(ParserUtil.getString(adsDetail, DESCRIPTION_SELECTOR, "description"));
 			apartment.setPrice(ParserUtil.getInteger(adsDetail, PRICE_SELECTOR, "price"));
-			apartment.setPhoneNumber(ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber"));
 			apartment.setUserName(ParserUtil.getString(adsDetail, USER_NAME_SELECTOR, "userName"));
 
 			Elements elements = adsDetail.select(TABLE_DETAILS_DIV_SELECTOR);
@@ -151,8 +150,20 @@ public class OlxScraper {
 					apartment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
 				}
 			}
+
+			if (isPublishedByOwner(apartment) && hasKeyWords(apartment, wantedKeyWords) && !hasKeyWords(apartment, unwantedKeyWords)) {
+				apartment.setIsRelevant(true);
+				apartment.setScrapingSession(scrapingSession);
+				scrapingSession.getApartments().add(apartment);
+				String phoneNumber = getPhoneNumber(adsDetail);
+				apartment.setPhoneNumber(phoneNumber);
+			}
 		}
 		return apartment;
+	}
+
+	private String getPhoneNumber(Document adsDetail) {
+		return ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber");
 	}
 
 	private void pause(long millis) {
@@ -187,7 +198,6 @@ public class OlxScraper {
 		}
 		return publishingDate;
 	}
-
 	private String getDate(String dateText) {
 		String date = null;
 		Matcher matcher = DATE_PATTERN.matcher(dateText);

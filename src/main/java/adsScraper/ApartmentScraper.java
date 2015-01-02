@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 
 import javax.ejb.Stateless;
 import javax.inject.Inject;
@@ -28,7 +27,6 @@ import adsScraper.olx.OlxUrlBuilder.Order;
 public class ApartmentScraper {
 
 	private static final Logger LOG = LoggerFactory.getLogger(ApartmentScraper.class);
-	private static final Locale LOCALE = new Locale("RO");
 
 	@Inject
 	private OlxScraper olxScraper;
@@ -46,8 +44,8 @@ public class ApartmentScraper {
 			"observator", "opera", "parc ", "parc,", "parc.", "parc;", "parc!", "persoana fizica", "p f", "p. f.", "pf ", "plopilor", "recuperare",
 			"regionala", "republicii", "scortarilor", "sigma", "sporturilor", "teatru", "titulescu", "vlahuta", "zorilor", "13 septembrie");
 
-	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("manastur", "floresti", "gilau", "baciu", "bulgaria", "iris", "apahid",
-			"turda", "someseni");
+	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("apahid", "baciu", "bulgaria", "demisol", "floresti", "gilau", "iris",
+			"manastur", "parter", "someseni", "turda");
 
 	// @Schedule(hour = "*/4", persistent = true)
 	public List<MinimumAdsDetailDto> scrap() {
@@ -105,7 +103,7 @@ public class ApartmentScraper {
 	}
 
 	private Date getYesterdaysDate() {
-		Calendar calendar = Calendar.getInstance(LOCALE);
+		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(currentDate);
 		// calendar.add(Calendar.DATE, -1);
 		calendar.add(Calendar.HOUR, -2);
