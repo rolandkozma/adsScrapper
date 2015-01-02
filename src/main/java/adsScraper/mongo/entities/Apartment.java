@@ -6,7 +6,6 @@ import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Entity;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Reference;
-import org.mongodb.morphia.annotations.Transient;
 
 @Entity("apartment")
 public class Apartment {
@@ -32,8 +31,6 @@ public class Apartment {
 	private String keyWord;
 	private Integer rooms;
 	private String business;
-	@Transient
-	private boolean isRelevant;
 
 	public Apartment() {
 
@@ -187,14 +184,6 @@ public class Apartment {
 		this.scrapingSession = scrapingSession;
 	}
 
-	public boolean isRelevant() {
-		return isRelevant;
-	}
-
-	public void setIsRelevant(boolean isRelevant) {
-		this.isRelevant = isRelevant;
-	}
-
 	public enum Site {
 		OLX("olx");
 
@@ -215,7 +204,7 @@ public class Apartment {
 				+ ",\n compartimentalization=" + compartimentalization + ",\n surface=" + surface + ",\n constructionPeriod=" + constructionPeriod
 				+ ",\n endowments=" + endowments + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
 				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite + ",\n keyWord="
-				+ keyWord + ",\n rooms=" + rooms + ",\n business=" + business + ",\n isRelevant=" + isRelevant + ",\n " + scrapingSession + "]";
+				+ keyWord + ",\n rooms=" + rooms + ",\n business=" + business + ",\n " + scrapingSession + "]";
 	}
 
 }

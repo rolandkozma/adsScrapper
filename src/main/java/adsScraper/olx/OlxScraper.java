@@ -25,6 +25,8 @@ import adsScraper.mongo.entities.Apartment;
 import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.util.ParserUtil;
 
+import com.gargoylesoftware.htmlunit.WebClient;
+
 @Stateless
 public class OlxScraper {
 	private static final Logger LOG = LoggerFactory.getLogger(OlxScraper.class);
@@ -32,7 +34,7 @@ public class OlxScraper {
 	private static final String REFERENCE_NUMBER_SELECTOR = "div.offerheadinner p small span span span.rel";
 	private static final String PRICE_SELECTOR = "div#offeractions div div div.pricelabel strong";
 	private static final String USER_NAME_SELECTOR = "div#offeractions div.userbox p.userdetails span.block:nth-child(1)";
-	private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
+	// private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
 	private static final String DESCRIPTION_SELECTOR = "div#textContent p";
 	private static final String PUBLISHING_DATE_SELECTOR = "div.offerheadinner p small span";
 	private static final String TABLE_DETAILS_DIV_SELECTOR = "div.descriptioncontent table.details tr td div";
@@ -54,6 +56,9 @@ public class OlxScraper {
 	@Inject
 	private ApartmentDao apartmentDao;
 
+	@Inject
+	private WebClient webClient;
+
 	public List<MinimumAdsDetailDto> scrap(OlxUrlBuilder olxUrlBuilder, List<String> wantedKeyWords, List<String> unwantedKeyWords,
 			Date lastScrapingDate, ScrapingSession scrapingSession) {
 		List<MinimumAdsDetailDto> minimumAdsDetailDtos = new ArrayList<MinimumAdsDetailDto>();
@@ -64,21 +69,26 @@ public class OlxScraper {
 		LOG.info("--------------------- start {} -----------------------\n", infoLog);
 		while (parseNextPage) {
 			pageNumber++;
-			String url = olxUrlBuilder.page(pageNumber).getUrl();
-			Elements links = getAdLinks(url);
+			String pageUrl = olxUrlBuilder.page(pageNumber).getUrl();
+			Elements links = getAdLinks(pageUrl);
 			LOG.debug("got: {}", links.size());
 
 			for (Element link : links) {
-				Apartment apartment = createApartment(link, olxUrlBuilder, scrapingSession, wantedKeyWords, unwantedKeyWords);
+				Apartment apartment = createApartment(link, olxUrlBuilder);
 
-				if ((apartment.getPublishingDate() != null) && apartment.getPublishingDate().before(lastScrapingDate)) {
+				if (isPublishedBeforeLastScrapingDate(lastScrapingDate, apartment)) {
 					parseNextPage = false;
 					break;
 				}
 
-				if (apartment.isRelevant()) {
-					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(apartment));
+				if (isRelevant(apartment, wantedKeyWords, unwantedKeyWords)) {
+					addToScrapingSession(scrapingSession, apartment);
+
+					String phoneNumber = getPhoneNumber(apartment.getUrl());
+					apartment.setPhoneNumber(phoneNumber);
+
 					apartmentDao.save(apartment);
+					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(apartment));
 					LOG.info(apartment.toString());
 				}
 
@@ -90,20 +100,33 @@ public class OlxScraper {
 		return minimumAdsDetailDtos;
 	}
 
+	private void addToScrapingSession(ScrapingSession scrapingSession, Apartment apartment) {
+		apartment.setScrapingSession(scrapingSession);
+		scrapingSession.getApartments().add(apartment);
+	}
+
+	private boolean isRelevant(Apartment apartment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
+		return isPublishedByOwner(apartment) && hasKeyWords(apartment, wantedKeyWords) && !hasKeyWords(apartment, unwantedKeyWords);
+	}
+
+	private boolean isPublishedBeforeLastScrapingDate(Date lastScrapingDate, Apartment apartment) {
+		return (apartment.getPublishingDate() != null) && apartment.getPublishingDate().before(lastScrapingDate);
+	}
+
 	private boolean isPublishedByOwner(Apartment apartment) {
 		return OWNER.equalsIgnoreCase(apartment.getProvidedBy());
 	}
 
 	private boolean hasKeyWords(Apartment apartment, List<String> keyWords) {
 		boolean hasKeyWords = false;
-		String description = apartment.getDescription();
-		if (description != null) {
-			String lowerCaseDescription = description.toLowerCase();
-			for (String key : keyWords) {
-				if (lowerCaseDescription.contains(key.toLowerCase())) {
-					hasKeyWords = true;
-					apartment.setKeyWord(key);
-				}
+		String title = apartment.getTitle() == null ? "" : apartment.getTitle();
+		String description = apartment.getDescription() == null ? "" : apartment.getDescription();
+		String fullDescription = String.format("%s %s", title, description).toLowerCase();
+
+		for (String key : keyWords) {
+			if (fullDescription.contains(key.toLowerCase())) {
+				hasKeyWords = true;
+				apartment.setKeyWord(key);
 			}
 		}
 		return hasKeyWords;
@@ -118,8 +141,7 @@ public class OlxScraper {
 		return links;
 	}
 
-	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder, ScrapingSession scrapingSession, List<String> wantedKeyWords,
-			List<String> unwantedKeyWords) {
+	private Apartment createApartment(Element link, OlxUrlBuilder olxUrlBuilder) {
 		Apartment apartment = new Apartment();
 		apartment.setPublishingSite(Apartment.Site.OLX.value());
 		apartment.setTitle(link.text());
@@ -150,20 +172,30 @@ public class OlxScraper {
 					apartment.setEndowments(ParserUtil.getString(element, "a", "endowments"));
 				}
 			}
-
-			if (isPublishedByOwner(apartment) && hasKeyWords(apartment, wantedKeyWords) && !hasKeyWords(apartment, unwantedKeyWords)) {
-				apartment.setIsRelevant(true);
-				apartment.setScrapingSession(scrapingSession);
-				scrapingSession.getApartments().add(apartment);
-				String phoneNumber = getPhoneNumber(adsDetail);
-				apartment.setPhoneNumber(phoneNumber);
-			}
 		}
 		return apartment;
 	}
 
-	private String getPhoneNumber(Document adsDetail) {
-		return ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNumber");
+	private String getPhoneNumber(String detailsPageurl) {
+		// LOG.info(" ---- GET PHONE NR. from: {}", detailsPageurl);
+		// try {
+		// HtmlPage page = webClient.getPage(detailsPageurl);
+		// HtmlUnorderedList ul = page.getHtmlElementById("contact_methods");
+		// Page ulContent = ul.click();
+		// WebResponse webResponse = ulContent.getWebResponse();
+		// String content = webResponse.getContentAsString();
+		// System.out.println(content);
+		//
+		// Document adsDetail = Jsoup.parse(content);
+		// if (adsDetail != null) {
+		// ParserUtil.getString(adsDetail, PHONE_NUMBER_SELECTOR, "phoneNr");
+		// }
+		//
+		// } catch (Exception e) {
+		// LOG.warn(e.getMessage(), e);
+		// }
+
+		return null;
 	}
 
 	private void pause(long millis) {

@@ -106,7 +106,7 @@ public class ApartmentScraper {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(currentDate);
 		// calendar.add(Calendar.DATE, -1);
-		calendar.add(Calendar.HOUR, -2);
+		calendar.add(Calendar.HOUR, -12);
 		return calendar.getTime();
 	}
 
