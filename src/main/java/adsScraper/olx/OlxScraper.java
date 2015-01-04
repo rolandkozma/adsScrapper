@@ -54,7 +54,7 @@ public abstract class OlxScraper {
 		LOG.info("--------------------- start {} -----------------------\n", infoLog);
 		while (parseNextPage) {
 			pageNumber++;
-			String pageUrl = olxUrlBuilder.page(pageNumber).getUrl();
+			String pageUrl = getPageUrl(olxUrlBuilder.page(pageNumber));
 			Elements links = getAdvertismentLinks(pageUrl);
 
 			for (Element link : links) {
@@ -83,6 +83,8 @@ public abstract class OlxScraper {
 		LOG.info("--------------------- end {} -----------------------\n", infoLog);
 		return minimumAdsDetailDtos;
 	}
+
+	public abstract String getPageUrl(OlxUrlBuilder page);
 
 	public abstract String getInfoLog(OlxUrlBuilder olxUrlBuilder);
 

@@ -142,23 +142,29 @@ public class OlxUrlBuilder {
 		return page;
 	}
 
-	public String getUrl() {
-		if ((realEstateType == null) || ((realEstateType == RealEstateType.APARTMENT) && (rooms == null)) || (city == null) || (business == null)
-				|| (orderBy == null) || (page == null)) {
-			throw new NullPointerException("Cannot construct URL with null fields.");
+	public String getApartmentUrl() {
+		if ((realEstateType == null) || (rooms == null) || (city == null) || (business == null) || (orderBy == null) || (page == null)) {
+			throw new NullPointerException("Cannot construct Apartment URL with null fields.");
 		}
 
-		switch (realEstateType) {
-			case APARTMENT :
-				return String.format(APARTMENT_URL, realEstateType.value(), rooms, city.value(), business.value(), orderBy.value(), page);
-			case HOUSE :
-				return String.format(HOUSE_URL, realEstateType.value(), city.value(), business.value(), orderBy.value(), page);
-			case LAND :
-				return String.format(LAND_URL, realEstateType.value(), city.value(), business.value(), orderBy.value(), page);
-			default :
-				throw new RuntimeException("this realEstateType is not handled!: " + realEstateType);
+		return String.format(APARTMENT_URL, RealEstateType.APARTMENT, rooms, getCity().value(), getBusiness().value(), getOrderBy().value(),
+				getPage());
+	}
+
+	public String getHouseUrl() {
+		if ((realEstateType == null) || (city == null) || (business == null) || (orderBy == null) || (page == null)) {
+			throw new NullPointerException("Cannot construct House URL with null fields.");
 		}
 
+		return String.format(HOUSE_URL, RealEstateType.HOUSE, getCity().value(), getBusiness().value(), getOrderBy().value(), getPage());
+	}
+
+	public String getLandUrl() {
+		if ((realEstateType == null) || (city == null) || (business == null) || (orderBy == null) || (page == null)) {
+			throw new NullPointerException("Cannot construct Land URL with null fields.");
+		}
+
+		return String.format(LAND_URL, RealEstateType.LAND, getCity().value(), getBusiness().value(), getOrderBy().value(), getPage());
 	}
 
 }

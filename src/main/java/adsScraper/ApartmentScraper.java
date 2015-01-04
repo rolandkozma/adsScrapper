@@ -34,7 +34,7 @@ public class ApartmentScraper extends AdvertismentScraper {
 			"regionala", "republicii", "scortarilor", "sigma", "sporturilor", "teatru", "titulescu", "vlahuta", "zorilor", "13 septembrie");
 
 	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("apahid", "baciu", "bulgaria", "demisol", "floresti", "gilau", "iris",
-			"manastur", "parter", "someseni", "turda");
+			"mansarda", "manastur", "muresului", "parter", "polus", "someseni", "turda");
 
 	@Override
 	RealEstateType getScrapingSessionType() {

@@ -68,8 +68,8 @@ public abstract class AdvertismentScraper {
 	Date getYesterdaysDate() {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(currentDate);
-		// calendar.add(Calendar.DATE, -1);
-		calendar.add(Calendar.HOUR, -12);
+		calendar.add(Calendar.DATE, -5);
+		// calendar.add(Calendar.HOUR, -12);
 		return calendar.getTime();
 	}
 

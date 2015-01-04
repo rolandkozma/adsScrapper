@@ -64,4 +64,9 @@ public class OlxApartmentScraper extends OlxScraper {
 
 	}
 
+	@Override
+	public String getPageUrl(OlxUrlBuilder olxUrlBuilder) {
+		return olxUrlBuilder.getApartmentUrl();
+	}
+
 }
