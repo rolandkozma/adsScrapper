@@ -5,6 +5,8 @@ import javax.inject.Inject;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import adsScraper.mongo.dao.ApartmentDao;
 import adsScraper.mongo.entities.Apartment;
@@ -13,6 +15,7 @@ import adsScraper.olx.OlxUrlBuilder.RealEstateType;
 import adsScraper.util.ParserUtil;
 
 public class OlxApartmentScraper extends OlxScraper<Apartment> {
+	private static final Logger LOG = LoggerFactory.getLogger(OlxApartmentScraper.class);
 
 	private static final String RAILROAD_COMPARTIMENTALIZATION = "semidecomandat";
 	private static final String COMPARTIMENTALIZATION_TEXT = "compartimentare";
@@ -74,7 +77,11 @@ public class OlxApartmentScraper extends OlxScraper<Apartment> {
 	}
 
 	private boolean isRailroad(Apartment apartment) {
-		return RAILROAD_COMPARTIMENTALIZATION.equalsIgnoreCase(apartment.getCompartimentalization());
+		boolean isRailroad = RAILROAD_COMPARTIMENTALIZATION.equalsIgnoreCase(apartment.getCompartimentalization());
+		if (isRailroad) {
+			LOG.info("E {}", RAILROAD_COMPARTIMENTALIZATION);
+		}
+		return isRailroad;
 	}
 
 }

@@ -143,7 +143,11 @@ public abstract class OlxScraper<T extends Advertisment> {
 	}
 
 	private boolean isPublishedByOwner(T advertisment) {
-		return OWNER.equalsIgnoreCase(advertisment.getProvidedBy());
+		boolean isPublishedByOwner = OWNER.equalsIgnoreCase(advertisment.getProvidedBy());
+		if (!isPublishedByOwner) {
+			LOG.info("Nu e {}", OWNER);
+		}
+		return isPublishedByOwner;
 	}
 
 	private boolean hasKeyWords(T advertisment, List<String> keyWords) {
@@ -152,11 +156,16 @@ public abstract class OlxScraper<T extends Advertisment> {
 		String description = advertisment.getDescription() == null ? "" : advertisment.getDescription();
 		String fullDescription = String.format("%s %s", title, description).toLowerCase();
 
-		for (String key : keyWords) {
-			if (fullDescription.contains(key.toLowerCase())) {
+		for (String keyWord : keyWords) {
+			if (fullDescription.contains(keyWord.toLowerCase())) {
 				hasKeyWords = true;
-				advertisment.setKeyWord(key);
+				advertisment.setKeyWord(keyWord);
+				break;
 			}
+		}
+
+		if (hasKeyWords) {
+			LOG.info("Cuvant cheie: {}", advertisment.getKeyWord());
 		}
 		return hasKeyWords;
 	}
