@@ -8,9 +8,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import adsScraper.HouseScraper;
 import adsScraper.dto.MinimumAdsDetailDto;
 import adsScraper.dto.MinimumAdsDetailListDto;
+import adsScraper.service.HouseScraper;
 
 @Path("houses")
 public class HouseScraperResource {

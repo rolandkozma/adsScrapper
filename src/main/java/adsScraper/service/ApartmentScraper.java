@@ -1,4 +1,4 @@
-package adsScraper;
+package adsScraper.service;
 
 import java.util.ArrayList;
 import java.util.Arrays;

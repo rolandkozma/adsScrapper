@@ -1,4 +1,4 @@
-package adsScraper;
+package adsScraper.service;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import adsScraper.dto.MinimumAdsDetailDto;
 import adsScraper.mongo.entities.ScrapingSession;
-import adsScraper.olx.OlxHouseScraper;
+import adsScraper.olx.OlxLandScraper;
 import adsScraper.olx.OlxUrlBuilder;
 import adsScraper.olx.OlxUrlBuilder.Business;
 import adsScraper.olx.OlxUrlBuilder.City;
@@ -20,12 +20,12 @@ import adsScraper.olx.OlxUrlBuilder.Order;
 import adsScraper.olx.OlxUrlBuilder.RealEstateType;
 
 @Stateless
-public class HouseScraper extends AdvertismentScraper {
+public class LandScraper extends AdvertismentScraper {
 
-	private static final Logger LOG = LoggerFactory.getLogger(HouseScraper.class);
+	private static final Logger LOG = LoggerFactory.getLogger(LandScraper.class);
 
 	@Inject
-	private OlxHouseScraper olxHouseScraper;
+	private OlxLandScraper olxLandScraper;
 
 	private static final List<String> WANTED_KEY_WORDS = Arrays.asList();
 
@@ -33,12 +33,12 @@ public class HouseScraper extends AdvertismentScraper {
 
 	@Override
 	RealEstateType getScrapingSessionType() {
-		return RealEstateType.HOUSE;
+		return RealEstateType.LAND;
 	}
 
 	@Override
 	void logScrapedRecordsSize(ScrapingSession scrapingSession) {
-		LOG.info("This scraping session has scraped {} records!", scrapingSession.getHouses().size());
+		LOG.info("This scraping session has scraped {} records!", scrapingSession.getLands().size());
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class HouseScraper extends AdvertismentScraper {
 
 		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(City.CLUJ_NAPOCA).business(Business.PRIVATE).orderBy(Order.DATE);
 
-		List<MinimumAdsDetailDto> foundHouses = olxHouseScraper.scrap(olxUrlBuilder, WANTED_KEY_WORDS, UNWANTED_KEY_WORDS, lastScrapingDate,
+		List<MinimumAdsDetailDto> foundHouses = olxLandScraper.scrap(olxUrlBuilder, WANTED_KEY_WORDS, UNWANTED_KEY_WORDS, lastScrapingDate,
 				scrapingSession);
 
 		return foundHouses;

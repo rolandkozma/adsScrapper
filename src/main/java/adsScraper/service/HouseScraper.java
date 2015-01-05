@@ -1,4 +1,4 @@
-package adsScraper;
+package adsScraper.service;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import adsScraper.dto.MinimumAdsDetailDto;
 import adsScraper.mongo.entities.ScrapingSession;
-import adsScraper.olx.OlxLandScraper;
+import adsScraper.olx.OlxHouseScraper;
 import adsScraper.olx.OlxUrlBuilder;
 import adsScraper.olx.OlxUrlBuilder.Business;
 import adsScraper.olx.OlxUrlBuilder.City;
@@ -20,12 +20,12 @@ import adsScraper.olx.OlxUrlBuilder.Order;
 import adsScraper.olx.OlxUrlBuilder.RealEstateType;
 
 @Stateless
-public class LandScraper extends AdvertismentScraper {
+public class HouseScraper extends AdvertismentScraper {
 
-	private static final Logger LOG = LoggerFactory.getLogger(LandScraper.class);
+	private static final Logger LOG = LoggerFactory.getLogger(HouseScraper.class);
 
 	@Inject
-	private OlxLandScraper olxLandScraper;
+	private OlxHouseScraper olxHouseScraper;
 
 	private static final List<String> WANTED_KEY_WORDS = Arrays.asList();
 
@@ -33,12 +33,12 @@ public class LandScraper extends AdvertismentScraper {
 
 	@Override
 	RealEstateType getScrapingSessionType() {
-		return RealEstateType.LAND;
+		return RealEstateType.HOUSE;
 	}
 
 	@Override
 	void logScrapedRecordsSize(ScrapingSession scrapingSession) {
-		LOG.info("This scraping session has scraped {} records!", scrapingSession.getLands().size());
+		LOG.info("This scraping session has scraped {} records!", scrapingSession.getHouses().size());
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class LandScraper extends AdvertismentScraper {
 
 		OlxUrlBuilder olxUrlBuilder = new OlxUrlBuilder().city(City.CLUJ_NAPOCA).business(Business.PRIVATE).orderBy(Order.DATE);
 
-		List<MinimumAdsDetailDto> foundHouses = olxLandScraper.scrap(olxUrlBuilder, WANTED_KEY_WORDS, UNWANTED_KEY_WORDS, lastScrapingDate,
+		List<MinimumAdsDetailDto> foundHouses = olxHouseScraper.scrap(olxUrlBuilder, WANTED_KEY_WORDS, UNWANTED_KEY_WORDS, lastScrapingDate,
 				scrapingSession);
 
 		return foundHouses;
