@@ -147,7 +147,7 @@ public class OlxUrlBuilder {
 			throw new NullPointerException("Cannot construct Apartment URL with null fields.");
 		}
 
-		return String.format(APARTMENT_URL, RealEstateType.APARTMENT, rooms, getCity().value(), getBusiness().value(), getOrderBy().value(),
+		return String.format(APARTMENT_URL, RealEstateType.APARTMENT.value(), rooms, getCity().value(), getBusiness().value(), getOrderBy().value(),
 				getPage());
 	}
 
@@ -156,7 +156,7 @@ public class OlxUrlBuilder {
 			throw new NullPointerException("Cannot construct House URL with null fields.");
 		}
 
-		return String.format(HOUSE_URL, RealEstateType.HOUSE, getCity().value(), getBusiness().value(), getOrderBy().value(), getPage());
+		return String.format(HOUSE_URL, RealEstateType.HOUSE.value(), getCity().value(), getBusiness().value(), getOrderBy().value(), getPage());
 	}
 
 	public String getLandUrl() {
@@ -164,7 +164,7 @@ public class OlxUrlBuilder {
 			throw new NullPointerException("Cannot construct Land URL with null fields.");
 		}
 
-		return String.format(LAND_URL, RealEstateType.LAND, getCity().value(), getBusiness().value(), getOrderBy().value(), getPage());
+		return String.format(LAND_URL, RealEstateType.LAND.value(), getCity().value(), getBusiness().value(), getOrderBy().value(), getPage());
 	}
 
 }
