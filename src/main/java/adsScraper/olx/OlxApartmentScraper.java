@@ -1,19 +1,16 @@
 package adsScraper.olx;
-import javax.ejb.Stateless;
 import javax.inject.Inject;
 
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import adsScraper.mongo.dao.ApartmentDao;
-import adsScraper.mongo.entities.Advertisment;
 import adsScraper.mongo.entities.Apartment;
 import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.olx.OlxUrlBuilder.RealEstateType;
 import adsScraper.util.ParserUtil;
 
-@Stateless
-public class OlxApartmentScraper extends OlxScraper {
+public class OlxApartmentScraper extends OlxScraper<Apartment> {
 
 	private static final String COMPARTIMENTALIZATION_TEXT = "compartimentare";
 	private static final String CONSTRUCTION_PERIOD_TEXT = "constructie";
@@ -32,25 +29,23 @@ public class OlxApartmentScraper extends OlxScraper {
 	}
 
 	@Override
-	public void addToScrapingSession(ScrapingSession scrapingSession, Advertisment advertisment) {
-		advertisment.setScrapingSession(scrapingSession);
-		scrapingSession.getApartments().add((Apartment) advertisment);
+	public void addToScrapingSession(ScrapingSession scrapingSession, Apartment apartment) {
+		apartment.setScrapingSession(scrapingSession);
+		scrapingSession.getApartments().add(apartment);
 	}
 
 	@Override
-	public void saveAdvertisment(Advertisment advertisment) {
-		apartmentDao.save((Apartment) advertisment);
+	public void saveAdvertisment(Apartment apartment) {
+		apartmentDao.save(apartment);
 	}
 
 	@Override
-	public Advertisment createAdvertisment() {
+	public Apartment createAdvertisment() {
 		return new Apartment();
 	}
 
 	@Override
-	public void setAdvertismentAditionalDetails(Advertisment advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
-		Apartment apartment = (Apartment) advertisment;
-
+	public void setAdvertismentAditionalDetails(Apartment apartment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
 		apartment.setRooms(olxUrlBuilder.getRooms());
 
 		for (Element element : detailElements) {
@@ -61,7 +56,6 @@ public class OlxApartmentScraper extends OlxScraper {
 				apartment.setConstructionPeriod(ParserUtil.getString(element, "a", "constructionPeriod"));
 			}
 		}
-
 	}
 
 	@Override

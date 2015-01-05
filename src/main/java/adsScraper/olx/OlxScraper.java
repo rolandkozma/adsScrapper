@@ -22,7 +22,7 @@ import adsScraper.mongo.entities.Apartment;
 import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.util.ParserUtil;
 
-public abstract class OlxScraper {
+public abstract class OlxScraper<T extends Advertisment> {
 	private static final Logger LOG = LoggerFactory.getLogger(OlxScraper.class);
 
 	// private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
@@ -58,7 +58,7 @@ public abstract class OlxScraper {
 			Elements links = getAdvertismentLinks(pageUrl);
 
 			for (Element link : links) {
-				Advertisment advertisment = createAdvertisment(link, olxUrlBuilder);
+				T advertisment = createAdvertisment(link, olxUrlBuilder);
 
 				if (isPublishedBeforeLastScrapingDate(advertisment, lastScrapingDate)) {
 					parseNextPage = false;
@@ -99,8 +99,8 @@ public abstract class OlxScraper {
 		return links;
 	}
 
-	private Advertisment createAdvertisment(Element link, OlxUrlBuilder olxUrlBuilder) {
-		Advertisment advertisment = createAdvertisment();
+	private T createAdvertisment(Element link, OlxUrlBuilder olxUrlBuilder) {
+		T advertisment = createAdvertisment();
 		advertisment.setPublishingSite(Apartment.Site.OLX.value());
 		advertisment.setTitle(link.text());
 		advertisment.setUrl(link.absUrl("href"));
@@ -120,9 +120,9 @@ public abstract class OlxScraper {
 		return advertisment;
 	}
 
-	public abstract Advertisment createAdvertisment();
+	public abstract T createAdvertisment();
 
-	private void setAdvertismentDetails(Advertisment advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+	private void setAdvertismentDetails(T advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
 		for (Element element : detailElements) {
 			String elementText = element.ownText().trim().toLowerCase();
 			if (elementText.contains(PROVIDED_BY_TEXT)) {
@@ -135,22 +135,22 @@ public abstract class OlxScraper {
 		setAdvertismentAditionalDetails(advertisment, detailElements, olxUrlBuilder);
 	}
 
-	public abstract void setAdvertismentAditionalDetails(Advertisment advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder);
+	public abstract void setAdvertismentAditionalDetails(T advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder);
 
-	private boolean isPublishedBeforeLastScrapingDate(Advertisment advertisment, Date lastScrapingDate) {
+	private boolean isPublishedBeforeLastScrapingDate(T advertisment, Date lastScrapingDate) {
 		return (advertisment.getPublishingDate() != null) && advertisment.getPublishingDate().before(lastScrapingDate);
 	}
 
-	private boolean isRelevant(Advertisment advertisment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
+	private boolean isRelevant(T advertisment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
 		return isPublishedByOwner(advertisment) && (wantedKeyWords.isEmpty() || hasKeyWords(advertisment, wantedKeyWords))
 				&& (unwantedKeyWords.isEmpty() || !hasKeyWords(advertisment, unwantedKeyWords));
 	}
 
-	private boolean isPublishedByOwner(Advertisment advertisment) {
+	private boolean isPublishedByOwner(T advertisment) {
 		return OWNER.equalsIgnoreCase(advertisment.getProvidedBy());
 	}
 
-	private boolean hasKeyWords(Advertisment advertisment, List<String> keyWords) {
+	private boolean hasKeyWords(T advertisment, List<String> keyWords) {
 		boolean hasKeyWords = false;
 		String title = advertisment.getTitle() == null ? "" : advertisment.getTitle();
 		String description = advertisment.getDescription() == null ? "" : advertisment.getDescription();
@@ -165,14 +165,14 @@ public abstract class OlxScraper {
 		return hasKeyWords;
 	}
 
-	public abstract void addToScrapingSession(ScrapingSession scrapingSession, Advertisment advertisment);
+	public abstract void addToScrapingSession(ScrapingSession scrapingSession, T advertisment);
 
 	private String getPhoneNumber(String detailsPageurl) {
 		// TODO
 		return null;
 	}
 
-	public abstract void saveAdvertisment(Advertisment advertisment);
+	public abstract void saveAdvertisment(T advertisment);
 
 	private void pause(long millis) {
 		try {
