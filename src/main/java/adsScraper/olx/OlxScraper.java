@@ -122,7 +122,7 @@ public abstract class OlxScraper<T extends Advertisment> {
 
 	public abstract T createAdvertisment();
 
-	private void setAdvertismentDetails(T advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+	public void setAdvertismentDetails(T advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
 		for (Element element : detailElements) {
 			String elementText = element.ownText().trim().toLowerCase();
 			if (elementText.contains(PROVIDED_BY_TEXT)) {
@@ -131,17 +131,13 @@ public abstract class OlxScraper<T extends Advertisment> {
 				advertisment.setSurface(ParserUtil.getInteger(element, "strong", "surface"));
 			}
 		}
-
-		setAdvertismentAditionalDetails(advertisment, detailElements, olxUrlBuilder);
 	}
-
-	public abstract void setAdvertismentAditionalDetails(T advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder);
 
 	private boolean isPublishedBeforeLastScrapingDate(T advertisment, Date lastScrapingDate) {
 		return (advertisment.getPublishingDate() != null) && advertisment.getPublishingDate().before(lastScrapingDate);
 	}
 
-	private boolean isRelevant(T advertisment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
+	public boolean isRelevant(T advertisment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
 		return isPublishedByOwner(advertisment) && (wantedKeyWords.isEmpty() || hasKeyWords(advertisment, wantedKeyWords))
 				&& (unwantedKeyWords.isEmpty() || !hasKeyWords(advertisment, unwantedKeyWords));
 	}

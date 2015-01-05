@@ -20,7 +20,7 @@ public class ParserUtil {
 		Elements elements = adsDetail.select(selector);
 
 		if (!elements.isEmpty()) {
-			result = elements.get(0).ownText();
+			result = elements.get(0).ownText().trim();
 		} else {
 			LOG.warn("Failed to get {} from ads detail page!", fieldName);
 		}
@@ -34,7 +34,7 @@ public class ParserUtil {
 		Elements elements = element.select(selector);
 
 		if (!elements.isEmpty()) {
-			result = elements.get(0).ownText();
+			result = elements.get(0).ownText().trim();
 		} else {
 			LOG.warn("Failed to get {} from element: {} !", fieldName, element);
 		}

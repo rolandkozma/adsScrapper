@@ -44,7 +44,9 @@ public class OlxLandScraper extends OlxScraper<Land> {
 	}
 
 	@Override
-	public void setAdvertismentAditionalDetails(Land land, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+	public void setAdvertismentDetails(Land land, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+		super.setAdvertismentDetails(land, detailElements, olxUrlBuilder);
+
 		for (Element element : detailElements) {
 			String elementText = element.ownText().trim().toLowerCase();
 			if (elementText.contains(LOCATION_TEXT)) {

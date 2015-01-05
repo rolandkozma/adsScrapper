@@ -1,4 +1,6 @@
 package adsScraper.olx;
+import java.util.List;
+
 import javax.inject.Inject;
 
 import org.jsoup.nodes.Element;
@@ -12,6 +14,7 @@ import adsScraper.util.ParserUtil;
 
 public class OlxApartmentScraper extends OlxScraper<Apartment> {
 
+	private static final String RAILROAD_COMPARTIMENTALIZATION = "semidecomandat";
 	private static final String COMPARTIMENTALIZATION_TEXT = "compartimentare";
 	private static final String CONSTRUCTION_PERIOD_TEXT = "constructie";
 
@@ -45,7 +48,9 @@ public class OlxApartmentScraper extends OlxScraper<Apartment> {
 	}
 
 	@Override
-	public void setAdvertismentAditionalDetails(Apartment apartment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+	public void setAdvertismentDetails(Apartment apartment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+		super.setAdvertismentDetails(apartment, detailElements, olxUrlBuilder);
+
 		apartment.setRooms(olxUrlBuilder.getRooms());
 
 		for (Element element : detailElements) {
@@ -61,6 +66,15 @@ public class OlxApartmentScraper extends OlxScraper<Apartment> {
 	@Override
 	public String getPageUrl(OlxUrlBuilder olxUrlBuilder) {
 		return olxUrlBuilder.getApartmentUrl();
+	}
+
+	@Override
+	public boolean isRelevant(Apartment apartment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
+		return !isRailroad(apartment) && super.isRelevant(apartment, wantedKeyWords, unwantedKeyWords);
+	}
+
+	private boolean isRailroad(Apartment apartment) {
+		return RAILROAD_COMPARTIMENTALIZATION.equalsIgnoreCase(apartment.getCompartimentalization());
 	}
 
 }

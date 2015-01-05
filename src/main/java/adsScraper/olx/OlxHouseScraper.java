@@ -45,7 +45,9 @@ public class OlxHouseScraper extends OlxScraper<House> {
 	}
 
 	@Override
-	public void setAdvertismentAditionalDetails(House house, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+	public void setAdvertismentDetails(House house, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
+		super.setAdvertismentDetails(house, detailElements, olxUrlBuilder);
+
 		for (Element element : detailElements) {
 			String elementText = element.ownText().trim().toLowerCase();
 			if (elementText.contains(ENDOWMENTS_TEXT)) {
