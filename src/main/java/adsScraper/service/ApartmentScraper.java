@@ -29,12 +29,14 @@ public class ApartmentScraper extends AdvertismentScraper {
 	private OlxApartmentScraper olxApartmentScraper;
 
 	private static final List<String> WANTED_KEY_WORDS = Arrays.asList("babes", "bisericii ortodoxe", "botanica", "brd", "centru", "central ",
-			"central.", "central,", "central;", "central!", "cipariu", "dorobantilor", "garibaldi", "godeanu", "mihai viteazu", "nasaud",
-			"observator", "opera", "parc ", "parc,", "parc.", "parc;", "parc!", "persoana fizica", "p f", "p. f.", "pf ", "plopilor", "recuperare",
-			"regionala", "republicii", "scortarilor", "sigma", "sporturilor", "teatru", "titulescu", "vlahuta", "zorilor", "13 septembrie");
+			"central.", "central,", "central;", "central!", "cipariu", "constructor", "dorobantilor", "dezvoltator", "garibaldi", "godeanu",
+			"mihai viteazu", "nasaud", "observator", "opera", "parc ", "parc,", "parc.", "parc;", "parc!", "persoana fizica", "p f", "p. f.", "pf ",
+			"plopilor", "recuperare", "regionala", "republicii", "scortarilor", "sigma", "sporturilor", "teatru", "titulescu", "vlahuta", "zorilor",
+			"13 septembrie");
 
-	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("apahid", "baciu", "bulgaria", "demisol", "floresti", "gilau", "iris",
-			"mansarda", "manastur", "muresului", "parter", "polus", "someseni", "turda");
+	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("alunis", "apahid", "baumax", "borhanci", "baciu", "bulgaria", "campului",
+			"demisol", "4 / 4", "4/4", "4 din 4", "fabricii", "floresti", "gara ", "gara.", "garii", "gilau", "gradina", "horea", "iclod", "ionescu",
+			"iris", "mansarda", "manastur", "muresului", "parter", "polus", "semidecomandat", "someseni", "turda");
 
 	@Override
 	RealEstateType getScrapingSessionType() {
