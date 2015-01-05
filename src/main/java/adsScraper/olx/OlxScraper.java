@@ -138,8 +138,8 @@ public abstract class OlxScraper<T extends Advertisment> {
 	}
 
 	public boolean isRelevant(T advertisment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
-		return isPublishedByOwner(advertisment) && (wantedKeyWords.isEmpty() || hasKeyWords(advertisment, wantedKeyWords))
-				&& (unwantedKeyWords.isEmpty() || !hasKeyWords(advertisment, unwantedKeyWords));
+		return isPublishedByOwner(advertisment) && (unwantedKeyWords.isEmpty() || !hasKeyWords(advertisment, unwantedKeyWords))
+				&& (wantedKeyWords.isEmpty() || hasKeyWords(advertisment, wantedKeyWords));
 	}
 
 	private boolean isPublishedByOwner(T advertisment) {
