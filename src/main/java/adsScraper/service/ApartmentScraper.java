@@ -30,13 +30,16 @@ public class ApartmentScraper extends AdvertismentScraper {
 
 	private static final List<String> WANTED_KEY_WORDS = Arrays.asList("babes", "bisericii ortodoxe", "botanica", "brd", "centru", "central ",
 			"central.", "central,", "central;", "central!", "cipariu", "constructor", "dorobantilor", "dezvoltator", "garibaldi", "godeanu",
-			"mihai viteazu", "nasaud", "observator", "opera", "parc ", "parc,", "parc.", "parc;", "parc!", "persoana fizica", "p f", "p. f.", "pf ",
-			"plopilor", "recuperare", "regionala", "republicii", "scortarilor", "sigma", "sporturilor", "teatru", "titulescu", "vlahuta", "zorilor",
-			"13 septembrie");
+			"iulius", "interservisan", "mall", "mihai viteazu", "nasaud", "observator", "opera", "parc ", "parc,", "parc.", "parc;", "parc!",
+			"persoana fizica", "p f", "p. f.", "pf ", "plopilor", "recuperare", "regionala", "republicii", "scortarilor", "sigma", "sporturilor",
+			"teatru", "titulescu", "vlahuta", "zorilor", "13 septembrie");
 
-	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("alunis", "apahid", "baumax", "borhanci", "baciu", "bulgaria", "campului",
-			"demisol", "4 / 4", "4/4", "4 din 4", "fabricii", "floresti", "gara ", "gara.", "garii", "gilau", "gradina", "horea", "iclod", "ionescu",
-			"iris", "mansarda", "manastur", "muresului", "parter", "polus", "semidecomandat", "someseni", "turda");
+	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("alunis", "alverna", "vlaicu", "apahid", "apartamentul de vanzare",
+			"baumax", "borhanci", "baciu", "bonjour residence", "bulgaria", "buna ziua", "campului", "constantin noica", "demisol", "donath",
+			"europa", "4 / 4", "4/4", "4 din 4", "4 intr-un imobil cu 4 etaje", "fabricii", "fantanele", "floresti", "gara ", "gara.", "garii",
+			"garbau", "gilau", "gradina", "horea", "horia", "iclod", "ionescu", "iris", "mansarda", "manastur", "mein haus", "mehedinti",
+			"muresului", "napoca imobiliare", "pablo picasso", "parang", "parter", "plopilor vest", "polus", "rems", "someseni", "stil imobiliare",
+			"tasnad", "teracota", "teracote", "turda", "va oferim spre vanzare");
 
 	@Override
 	RealEstateType getScrapingSessionType() {

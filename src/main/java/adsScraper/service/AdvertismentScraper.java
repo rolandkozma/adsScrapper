@@ -7,6 +7,7 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.jboss.ejb3.annotation.TransactionTimeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +18,8 @@ import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.olx.OlxUrlBuilder.RealEstateType;
 
 public abstract class AdvertismentScraper {
+
+	private static final int ONE_HOUR_IN_SECONDS = 3600;
 
 	private static final Logger LOG = LoggerFactory.getLogger(AdvertismentScraper.class);
 
@@ -32,6 +35,7 @@ public abstract class AdvertismentScraper {
 
 	}
 
+	@TransactionTimeout(ONE_HOUR_IN_SECONDS)
 	public List<MinimumAdsDetailDto> scrap() {
 		List<MinimumAdsDetailDto> allAdvertisments = new ArrayList<>();
 
@@ -68,7 +72,7 @@ public abstract class AdvertismentScraper {
 	Date getYesterdaysDate() {
 		Calendar calendar = Calendar.getInstance();
 		calendar.setTime(currentDate);
-		calendar.add(Calendar.DATE, -5);
+		calendar.add(Calendar.DATE, -3);
 		// calendar.add(Calendar.HOUR, -12);
 		return calendar.getTime();
 	}

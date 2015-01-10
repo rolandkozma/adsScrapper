@@ -73,11 +73,16 @@ public class OlxApartmentScraper extends OlxScraper<Apartment> {
 
 	@Override
 	public boolean isRelevant(Apartment apartment, List<String> wantedKeyWords, List<String> unwantedKeyWords) {
-		return !isRailroad(apartment) && super.isRelevant(apartment, wantedKeyWords, unwantedKeyWords);
+		boolean isRelevant = super.isRelevant(apartment, wantedKeyWords, unwantedKeyWords);
+		if (apartment.getRooms() == 2) {
+			isRelevant = isRelevant && !isRailroad(apartment);
+		}
+		return isRelevant;
 	}
 
 	private boolean isRailroad(Apartment apartment) {
-		boolean isRailroad = RAILROAD_COMPARTIMENTALIZATION.equalsIgnoreCase(apartment.getCompartimentalization());
+		boolean isRailroad = (RAILROAD_COMPARTIMENTALIZATION.equalsIgnoreCase(apartment.getCompartimentalization()) || apartment.getDescription()
+				.toLowerCase().contains(RAILROAD_COMPARTIMENTALIZATION));
 		if (isRailroad) {
 			LOG.info("E {}", RAILROAD_COMPARTIMENTALIZATION);
 		}

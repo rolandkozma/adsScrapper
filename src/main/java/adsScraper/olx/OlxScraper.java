@@ -1,5 +1,10 @@
 package adsScraper.olx;
 
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.ArrayList;
@@ -22,10 +27,13 @@ import adsScraper.mongo.entities.Apartment;
 import adsScraper.mongo.entities.ScrapingSession;
 import adsScraper.util.ParserUtil;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+
 public abstract class OlxScraper<T extends Advertisment> {
 	private static final Logger LOG = LoggerFactory.getLogger(OlxScraper.class);
 
-	// private static final String PHONE_NUMBER_SELECTOR = "ul#contact_methods li.link-phone div.contactitem strong";
 	private static final String REFERENCE_NUMBER_SELECTOR = "div.offerheadinner p small span span span.rel";
 	private static final String PRICE_SELECTOR = "div#offeractions div div div.pricelabel strong";
 	private static final String USER_NAME_SELECTOR = "div#offeractions div.userbox p.userdetails span.block:nth-child(1)";
@@ -34,6 +42,8 @@ public abstract class OlxScraper<T extends Advertisment> {
 	private static final String TABLE_DETAILS_DIV_SELECTOR = "div.descriptioncontent table.details tr td div";
 	private static final String PROVIDED_BY_TEXT = "oferit";
 	private static final String SURFACE_TEXT = "suprafata";
+	private static final String PHONE_URL = "http://olx.ro/ajax/misc/contact/phone/%s/";
+	private static final String PHONE_LI_SELECTOR = "ul#contact_methods li.link-phone";
 
 	private static final Locale LOCALE = new Locale("RO");
 	private static final DateFormat DATE_FORMAT = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.SHORT, LOCALE);
@@ -68,8 +78,8 @@ public abstract class OlxScraper<T extends Advertisment> {
 				if (isRelevant(advertisment, wantedKeyWords, unwantedKeyWords)) {
 					addToScrapingSession(scrapingSession, advertisment);
 
-					String phoneNumber = getPhoneNumber(advertisment.getUrl());
-					advertisment.setPhoneNumber(phoneNumber);
+					String phone = getPhoneNumber(advertisment.getPhoneUrl());
+					advertisment.setPhone(phone);
 
 					saveAdvertisment(advertisment);
 					minimumAdsDetailDtos.add(new MinimumAdsDetailDto(advertisment));
@@ -106,6 +116,7 @@ public abstract class OlxScraper<T extends Advertisment> {
 		advertisment.setUrl(link.absUrl("href"));
 
 		Document advertismentPage = getDocument(advertisment.getUrl());
+		advertisment.setPhoneUrl(String.format(PHONE_URL, getId(advertismentPage)));
 		if (advertismentPage != null) {
 			advertisment.setBusiness(olxUrlBuilder.getBusiness().value());
 			advertisment.setPublishingDate(getPublishingDate(advertismentPage, PUBLISHING_DATE_SELECTOR, "publishingDate"));
@@ -120,6 +131,27 @@ public abstract class OlxScraper<T extends Advertisment> {
 		return advertisment;
 	}
 
+	public String getId(Document advertismentPage) {
+		String id = null;
+		Elements elements = advertismentPage.select(PHONE_LI_SELECTOR);
+		if ((elements != null) && !elements.isEmpty()) {
+			String className = elements.get(0).className();
+
+			int startJsonIndex = className.indexOf('{');
+			int endJsonIndex = className.indexOf('}');
+
+			if ((startJsonIndex != -1) && (endJsonIndex != -1) && (endJsonIndex > startJsonIndex)) {
+				String json = className.substring(startJsonIndex, endJsonIndex + 1);
+				try {
+					JsonElement root = new JsonParser().parse(json);
+					id = root.getAsJsonObject().get("id").getAsString();
+				} catch (JsonParseException e) {
+					LOG.warn(e.getMessage(), e);
+				}
+			}
+		}
+		return id;
+	}
 	public abstract T createAdvertisment();
 
 	public void setAdvertismentDetails(T advertisment, Elements detailElements, OlxUrlBuilder olxUrlBuilder) {
@@ -172,9 +204,37 @@ public abstract class OlxScraper<T extends Advertisment> {
 
 	public abstract void addToScrapingSession(ScrapingSession scrapingSession, T advertisment);
 
-	private String getPhoneNumber(String detailsPageurl) {
-		// TODO
-		return null;
+	private String getPhoneNumber(String phoneUrl) {
+		String phonenumber = null;
+		URL url = createUrl(phoneUrl);
+		if (url != null) {
+			HttpURLConnection phoneNumberRequest;
+			int retriesNr = 3;
+			int i = 0;
+			while ((phonenumber == null) && (i < retriesNr)) {
+				try {
+					phoneNumberRequest = (HttpURLConnection) url.openConnection();
+					try (InputStreamReader inputStreamReader = new InputStreamReader(phoneNumberRequest.getInputStream())) {
+						JsonElement root = new JsonParser().parse(inputStreamReader);
+						phonenumber = root.getAsJsonObject().get("value").getAsString();
+					}
+				} catch (IOException | JsonParseException e) {
+					LOG.warn(e.getMessage(), e);
+				}
+				i++;
+			}
+		}
+		return phonenumber;
+	}
+
+	public URL createUrl(String phoneUrl) {
+		URL url = null;
+		try {
+			url = new URL(phoneUrl);
+		} catch (MalformedURLException e) {
+			LOG.warn(e.getMessage(), e);
+		}
+		return url;
 	}
 
 	public abstract void saveAdvertisment(T advertisment);

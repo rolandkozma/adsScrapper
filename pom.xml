@@ -17,6 +17,8 @@
 		<junit.version>4.11</junit.version>
 		<morphia.version>0.109</morphia.version>
 		<mongo.driver.version>2.12.4</mongo.driver.version>
+		<jboss.ejb3.ext.api.version>2.1.0</jboss.ejb3.ext.api.version>
+		<gson.version>2.3.1</gson.version>
 	</properties>
 
 	<build>
@@ -47,6 +49,19 @@
 			<artifactId>javaee-api</artifactId>
 			<version>${javaee.version}</version>
 			<scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.jboss.ejb3</groupId>
+			<artifactId>jboss-ejb3-ext-api</artifactId>
+			<version>${jboss.ejb3.ext.api.version}</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>${gson.version}</version>
 		</dependency>
 
 		<!-- junit -->

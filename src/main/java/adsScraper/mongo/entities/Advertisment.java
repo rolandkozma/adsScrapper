@@ -5,6 +5,7 @@ import java.util.Date;
 import org.bson.types.ObjectId;
 import org.mongodb.morphia.annotations.Id;
 import org.mongodb.morphia.annotations.Reference;
+import org.mongodb.morphia.annotations.Transient;
 
 public abstract class Advertisment {
 	@Id
@@ -17,13 +18,15 @@ public abstract class Advertisment {
 	private String providedBy;
 	private String description;
 	private Integer price;
-	private String phoneNumber;
 	private Integer surface;
 	private String userName;
 	private Integer referenceNumber;
 	private String publishingSite;
 	private String keyWord;
 	private String business;
+	@Transient
+	private String phoneUrl;
+	private String phone;
 
 	public Advertisment() {
 
@@ -89,14 +92,6 @@ public abstract class Advertisment {
 		this.price = price;
 	}
 
-	public String getPhoneNumber() {
-		return phoneNumber;
-	}
-
-	public void setPhoneNumber(String phoneNumber) {
-		this.phoneNumber = phoneNumber;
-	}
-
 	public Integer getSurface() {
 		return surface;
 	}
@@ -145,6 +140,22 @@ public abstract class Advertisment {
 		this.business = business;
 	}
 
+	public String getPhoneUrl() {
+		return phoneUrl;
+	}
+
+	public void setPhoneUrl(String phoneUrl) {
+		this.phoneUrl = phoneUrl;
+	}
+
+	public String getPhone() {
+		return phone;
+	}
+
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
 	public enum Site {
 		OLX("olx");
 
@@ -162,9 +173,9 @@ public abstract class Advertisment {
 	@Override
 	public String toString() {
 		return "\n " + scrapingSession + "\n title=" + title + ",\n url=" + url + ",\n publishingDate=" + publishingDate + ",\n providedBy="
-				+ providedBy + ",\n surface=" + surface + ",\n description=" + description + ",\n price=" + price + ",\n phoneNumber=" + phoneNumber
-				+ ",\n userName=" + userName + ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite + ",\n keyWord="
-				+ keyWord + ",\n business=" + business;
+				+ providedBy + ",\n surface=" + surface + ",\n description=" + description + ",\n price=" + price + ",\n userName=" + userName
+				+ ",\n referenceNumber=" + referenceNumber + ",\n publishingSite=" + publishingSite + ",\n keyWord=" + keyWord + ",\n business="
+				+ business + ",\n phone=" + phone;
 	}
 
 }
