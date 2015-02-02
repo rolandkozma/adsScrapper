@@ -28,18 +28,21 @@ public class ApartmentScraper extends AdvertismentScraper {
 	@Inject
 	private OlxApartmentScraper olxApartmentScraper;
 
-	private static final List<String> WANTED_KEY_WORDS = Arrays.asList("babes", "bisericii ortodoxe", "botanica", "brd", "centru", "central ",
-			"central.", "central,", "central;", "central!", "cipariu", "constructor", "dorobantilor", "dezvoltator", "garibaldi", "godeanu",
-			"iulius", "interservisan", "mall", "mihai viteazu", "nasaud", "observator", "opera", "parc ", "parc,", "parc.", "parc;", "parc!",
-			"persoana fizica", "p f", "p. f.", "pf ", "plopilor", "recuperare", "regionala", "republicii", "scortarilor", "sigma", "sporturilor",
-			"teatru", "titulescu", "vlahuta", "zorilor", "13 septembrie");
+	private static final List<String> WANTED_KEY_WORDS = Arrays.asList();
+	// private static final List<String> WANTED_KEY_WORDS = Arrays.asList("babes", "bisericii ortodoxe", "botanica", "brd", "centru", "central ",
+	// "central.", "central,", "central;", "central!", "cipariu", "constructor", "dorobantilor", "dezvoltator", "garibaldi", "godeanu",
+	// "investitie", "iulius", "interservisan", "mall", "mihai viteazu", "nasaud", "observator", "opera", "parc ", "parc,", "parc.", "parc;",
+	// "parc!", "pasapoarte", "persoana fizica", "p f", "p. f.", "pf ", "plopilor", "recuperare", "regionala", "republicii", "scortarilor",
+	// "sigma", "sporturilor", "teatru", "titulescu", "vlahuta", "zorilor", "13 septembrie");
 
-	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("alunis", "alverna", "vlaicu", "apahid", "apartamentul de vanzare",
-			"baumax", "borhanci", "baciu", "bonjour residence", "bulgaria", "buna ziua", "campului", "constantin noica", "demisol", "donath",
-			"europa", "4 / 4", "4/4", "4 din 4", "4 intr-un imobil cu 4 etaje", "fabricii", "fantanele", "floresti", "gara ", "gara.", "garii",
-			"garbau", "gilau", "gradina", "horea", "horia", "iclod", "ionescu", "iris", "mansarda", "manastur", "mein haus", "mehedinti",
-			"muresului", "napoca imobiliare", "pablo picasso", "parang", "parter", "plopilor vest", "polus", "rems", "someseni", "stil imobiliare",
-			"tasnad", "teracota", "teracote", "turda", "va oferim spre vanzare");
+	private static final List<String> UNWANTED_KEY_WORDS = Arrays.asList("1 mai", "alunis", "alverna", "bucuresti", "vlaicu", "apahid",
+			"apartamentul de vanzare", "baumax", "borhanci", "baciu", "bonjour residence", "bucuresti", "bulgaria", "buna ziua", "calvaria",
+			"campului", "central park residence", "constantin noica", "complex diana", "demisol", "detunata", "donath", "dunarii", "europa", "4 / 4",
+			"4/4", "4 din 4", "4 intr-un imobil cu 4 etaje", "fabricii", "fantanele", "floresti", "gara ", "gara.", "garii", "garbau", "gilau",
+			"gradina", "grand hotel italia", "horea", "horia", "iclod", "ionescu", "iris", "ladea", " lunii", "mansarda", "manastur", "mein haus",
+			"mehedinti", "muresului", "napoca imobiliare", "oltului", "pablo picasso", "parang", "parter", "plopilor vest", "polus", " profi ",
+			" profi.", "rems", "retezat", "rbc imobiliare", "sanicoara", "someseni", "stil imobiliare", "tasnad", "teracota", "teracote", "tulcea",
+			"turda", "va oferim spre vanzare", "vlahuta");
 
 	@Override
 	RealEstateType getScrapingSessionType() {

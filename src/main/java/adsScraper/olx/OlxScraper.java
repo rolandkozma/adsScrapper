@@ -216,7 +216,7 @@ public abstract class OlxScraper<T extends Advertisment> {
 					phoneNumberRequest = (HttpURLConnection) url.openConnection();
 					try (InputStreamReader inputStreamReader = new InputStreamReader(phoneNumberRequest.getInputStream())) {
 						JsonElement root = new JsonParser().parse(inputStreamReader);
-						phonenumber = root.getAsJsonObject().get("value").getAsString();
+						phonenumber = root.getAsJsonObject().get("value").getAsString().replaceAll("\\D+", "");
 					}
 				} catch (IOException | JsonParseException e) {
 					LOG.warn(e.getMessage(), e);
